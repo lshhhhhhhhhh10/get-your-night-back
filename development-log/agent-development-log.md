@@ -792,3 +792,98 @@ https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.7.0 已生效
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 尚未收到学生对衣柜版本的反馈。等待学生试玩六套造型，反馈外观偏好、三维预览和手柄操作；没有待确认的实施决定。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 25 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 后续玩法讨论，未实施
+**Current Goal:** 推荐贴合探索、声音与潜行主题的新玩法
+**Git Tag / Commit:** 当前游戏 v0.7.0；讨论基于 95206a5（v0.7.1），没有新增玩法代码
+
+### Student Prompt
+“还有没有其他玩法推荐，可以让游戏更有趣”。
+
+### Agent Response Summary
+建议优先增加线索寻找、环境声音掩护与主动引开家长，让观察产生更多可选择的行动。其他备选为翻找后恢复现场、拿到手机后的返程振动，以及猫咪插曲。核对《Mark of the Ninja》官方介绍中每种情况提供多种选择的设计方向；具体家庭情境为针对本项目的提案，不声称来自该游戏现成机制。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 上述六项均是 AI 提出的新设计，尚未获得学生选择或实施授权，不写成现有游戏功能。
+- 建议先做线索、掩护声与引开家长的小组合，复用已有交互和巡查，不立即增加多个新系统。
+- 趣味提升是设计判断，尚未由玩家测试确认。避免不断增加同类时机操作带来的重复感。
+
+### Development Action
+检索官方玩法介绍并形成可比较的建议；仅追加讨论日志，未修改玩法、简报规格或网站功能说明。
+
+### Files / Mechanics Changed
+仅 development-log/agent-development-log.md。游戏保持 v0.7.0。
+
+### Immediate Result
+准备向学生提供六个具体场景与推荐顺序，所有新玩法均未实现。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+等待学生选择希望尝试的玩法方向；当前请求只要求推荐，不默认批准实现全部或部分提案。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 26 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 线索、掩护、声源道具与返程来电
+**Current Goal:** 实施学生选中的第 1、2、3、5 项玩法
+**Git Tag / Commit:** 基于 95206a5；本轮目标 v0.8.0，尚未发布
+
+### Student Prompt
+“增加1 2 3和5”。
+
+### Agent Response Summary
+将便条线索、环境声掩护、延迟响起的收音机／玩具鸭、手机来电接到三关。复用 E／手柄方块操作，并增加可以暂停阅读的线索本。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 每关两张可选便条，指向现有固定藏点；不强迫先读便条、不重新随机化设备位置，避免与已有地图逻辑矛盾。
+- 长鼾声约 1.5 秒、附近洗衣机脱水约 6 秒可以降低声响并直接通过松动木板；视线识别仍然生效。
+- 收音机和玩具鸭每夜各一次，2.5 秒后开始响四次，留出撤离时间。家长追查声源，故意引诱不计作玩家失误扣分。
+- 找到手机后有 6 秒振动预警，停下按住交互键 1.2 秒静音；走动或松手中断进度。错过会响三次并惊动家长，不直接判负。慢动作事件期间冻结来电预警。
+- 暂定参数为 AI 实施选择，趣味与节奏仍需学生试玩反馈，不声称已经得到用户测试验证。
+
+### Development Action
+扩展游戏规则、保存恢复、手柄与键盘入口、场景道具、原创合成声音和提示；修复新道具优先级抢走旧门交互的问题。
+
+### Files / Mechanics Changed
+source/night-tools.js、night-props.js、engine.js、audio.js、main.js；game.html、assets/style.css；开发日志。
+
+### Immediate Result
+现有 56 项规则检查通过，构建通过。正在补充新规则检查和实际浏览器通关，尚未完成公开发布。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+学生已明确选择四项，无待确认实施决定。完成验证和发布后等待学生反馈线索清楚程度、掩护时机和来电节奏。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 27 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 四项玩法整合验证
+**Current Goal:** 验证完整通关、旧进度与键鼠／手柄操作，并准备发布
+**Git Tag / Commit:** v0.8.0 发布候选；基于 95206a5
+
+### Student Prompt
+延续“增加1 2 3和5”的实施授权。
+
+### Agent Response Summary
+线索、掩护、引诱与来电已接成可玩的三关。便条阅读和静音沿用交互键，新增线索本可用 J / Create 查看。首页、挑战说明、简报和 README 同步新增行为。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 延续 Interaction 26 记录的范围、时长及行为选择，未加入其余两项备选玩法。
+- 旧版已拿到设备的存档直接视为无待处理来电，避免更新后突然出现新风险。
+- 起身预警期间听到新的明显声响，也更新第一处调查地点；此前只有开始走动后才会改道，此次修复使引诱前后逻辑一致。
+
+### Development Action
+新增 14 项规则检查，共 70 项通过。真实浏览器按键完成三关完整搜索、接物、静音和返程；另用定点存档验证线索保存、手柄 Create / □、道具延迟、局部掩护、移动打断和响铃后补救。测试中一个洗衣机定点存档放在墙内而被正常回退，修正测试位置后通过；没有把该测试失误当成游戏故障。
+
+### Files / Mechanics Changed
+新增夜探规则／道具模块和规则检查；主界面、引诱巡查、存储恢复、七类合成音效；首页实际线索本截图、过程页、README、简报、样式与日志。
+
+### Immediate Result
+三关均成功返程、评分一致，没有脚本报错。新增七种声音离线渲染均有输出且未削波，与现有音效及音乐检查同时通过。查看桌面／窄屏画面后修正任务文字和声音提示重叠。模型／音效主观体验与实体 DualSense USB 手感仍未验证。即将公开发布。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+无待确认的实施决定，继续完成发布和线上检查。之后等待学生试玩线索提示、引诱可用性和来电节奏。

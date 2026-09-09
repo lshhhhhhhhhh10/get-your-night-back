@@ -47,6 +47,12 @@ export class Soundscape{
     const note=(time,f,duration,level,type='sine')=>tone(ctx,g,time,f,duration,level,type);
     const sampled=kind==='doorHandle'?this.sample('handle',g,t,.7,1,0,.7):kind==='doorSoft'?this.sample('hinge',g,t,.18,.94,.15,.64):kind==='doorCreak'?this.sample('hinge',g,t,.66,.75,.10,.67):kind==='doorBump'?this.sample('bump',g,t,.8,.92):kind==='latch'?this.sample('latch',g,t,.55,1.05,.32,.32):kind==='metalDrop'?this.sample('metal',g,t,.8,.93):kind==='search'?this.sample('drawer',g,t,.22,.9,0,.55):false;
     if(sampled){/* 真实把手、门轴、木门撞击和金属碰撞，不叠加旧电子滑音。 */}
+    else if(kind==='washer'){burst(t,1.85,.20,180,1.2);for(let i=0;i<7;i++)note(t+i*.24,65,.19,.08,'triangle');}
+    else if(kind==='radio'){burst(t,.35,.08,900,.8);for(const [i,f]of [330,440,392,494].entries())note(t+i*.20,f,.24,.10,'triangle');}
+    else if(kind==='toy'){for(let i=0;i<2;i++){note(t+i*.35,620-i*140,.18,.12,'triangle');burst(t+i*.35,.15,.10,1050,3);}}
+    else if(kind==='phoneBuzz'){for(let i=0;i<2;i++){note(t+i*.18,110,.12,.045,'sawtooth');burst(t+i*.18,.10,.04,240,2);}}
+    else if(kind==='phoneRing'){for(let i=0;i<4;i++){note(t+i*.18,i%2?880:660,.13,.14,'sine');}}
+    else if(kind==='phoneMute'||kind==='switch'){burst(t,.06,.04,1200,1);if(kind==='phoneMute')note(t,390,.16,.035);}
     else if(kind==='pencilDrop'){for(let i=0;i<5;i++){note(t+i*.07,320+i*73,.08,.055);burst(t+i*.06,.09,.1,850+i*120,1);}}
     else if(['step','crouchStep','parentStep','tileStep'].includes(kind)){
       const soft=kind==='crouchStep',parent=kind==='parentStep',tile=kind==='tileStep',volume=soft?.045:parent?.20:.12;

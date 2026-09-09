@@ -1,3 +1,5 @@
+import {CLUES,LURES,maskAt,phonePending,clueText} from './night-tools.js';
+import {buildNightProps,updateNightProps} from './night-props.js';
 import {skinById,readSkin,saveSkin} from './skins.js';
 import {createSkinModel,disposeSkinModel} from './skin-model.js';
 import {Wardrobe} from './wardrobe.js';
@@ -19,6 +21,7 @@ const settings=readSettings(storage);
 let equippedSkin=readSkin(storage),wardrobe;const skinTemplates=new Map(),skinRequests=new Map();
 async function loadSkinTemplate(id){const url=skinById(id).model;if(skinTemplates.has(url))return skinTemplates.get(url);if(!skinRequests.has(url))skinRequests.set(url,new GLTFLoader().loadAsync(url).then(gltf=>{skinTemplates.set(url,gltf.scene);skinRequests.delete(url);return gltf.scene;}).catch(error=>{skinRequests.delete(url);throw error;}));return skinRequests.get(url);}
 const view={mode:'overview',hasMoved:false,yaw:0,pitch:-.10};
+let nightProps=[],toolLabels=[],chargerLamp;
 let assetTemplate,wallMeshes=[],openingMeshes=[],worldLabels=[],ceiling,sceneReady=false;
 let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){$('#loading').innerHTML='浏览器无法启动 3D。请使用开启硬件加速的 Chrome、Edge 或 Safari。';throw e;}
@@ -45,7 +48,7 @@ function createPlayer(parent=false){
   g.userData={body,asset,bones,skinId,role:parent?'parent':'player'};house.add(g);return g;
 }
 function buildHouse(){
-  scene.remove(house);house.traverse(o=>{if(!o.isSkinnedMesh)o.geometry?.dispose();if(o.isSprite)o.material?.map?.dispose();for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.parentOwned||m?.userData.skinOwned)m.dispose();});house=new THREE.Group();scene.add(house);doorMeshes=[];spotMeshes=[];wallMeshes=[];openingMeshes=[];worldLabels=[];
+  scene.remove(house);house.traverse(o=>{if(!o.isSkinnedMesh)o.geometry?.dispose();if(o.isSprite)o.material?.map?.dispose();for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.parentOwned||m?.userData.skinOwned||m?.userData.nightOwned)m.dispose();});house=new THREE.Group();scene.add(house);doorMeshes=[];spotMeshes=[];wallMeshes=[];openingMeshes=[];worldLabels=[];
   const maxX=mapWidth(game.level)-1,center=maxX/2,depth=MAP_DEPTH,cz=(depth-1)/2;
   box(maxX+1,.45,15,'#29374b',center,-.31,7);box(maxX+1.25,.16,15.25,'#40526a',center,-.6,7);
   box(maxX-9,.45,4,'#29374b',(maxX+10)/2,-.31,16.5);box(maxX-8.75,.16,4.25,'#40526a',(maxX+10)/2,-.6,16.5);
@@ -80,6 +83,11 @@ function buildHouse(){
   }
   const furniture=new Map();for(const f of furnitureFor(game.level)){const mesh=createFurniture(f);house.add(mesh);furniture.set(f.id,mesh);}
   for(const s of game.spots){const mesh=furniture.get(s.id),f=furnitureFor(game.level).find(f=>f.id===s.id);const marker=label('搜索',s.x,f.h+.38,s.z,'#f5d899',.48);marker.visible=false;spotMeshes.push({s,mesh,marker});}
+  nightProps=buildNightProps(house,game.level);toolLabels=[];
+  for(const item of [...CLUES,...LURES.filter(l=>l.minLevel<=game.level)]){const marker=label(item.name,item.x,item.y+.45,item.z,'#efd5a2',.40);marker.visible=false;toolLabels.push({item,marker});}
+  const target=game.spots.find(s=>s.device),support=furnitureFor(game.level).find(f=>f.id===target.id);
+  box(.13,.04,.10,'#353c48',target.x,support.h+.025,target.z);box(.18,.009,.016,'#a9afac',target.x+.14,support.h+.010,target.z);
+  chargerLamp=ball(.022,'#9de4b8',target.x,support.h+.047,target.z+.052);chargerLamp.material=new THREE.MeshStandardMaterial({color:0x9de4b8,emissive:0x74c9a1,emissiveIntensity:.7});chargerLamp.material.userData.nightOwned=true;
   // 薄地毯没有阻挡体积；居住用途通过成组家具、挂画和灯光表达。
   box(1.3,.018,1.8,'#b6a086',3.65,.026,12.15);box(2.2,.018,2.6,'#5e7d82',2.6,.026,2.8);
   const bedsideGlow=new THREE.PointLight(0xffb95e,14,6,1.8);bedsideGlow.position.set(3.5,2,11.8);house.add(bedsideGlow);
@@ -119,7 +127,7 @@ function persist(){if(game.status!=='ready'&&sceneReady){saveSession(storage,gam
 function updateStartLabel(){
   const s=saved?.game;$('#continue-detail').textContent=s?s.status==='won'?`继续 · 第 ${Math.min(3,s.level+2)} 夜`:s.status==='restart'?`布置已更新 · 重开第 ${s.level+1} 夜`:s.status==='lost'?`重试 · 第 ${s.level+1} 夜`:`继续 · 第 ${s.level+1} 夜 · ${Math.floor((s.realTime??s.time)/60)}:${String(Math.floor((s.realTime??s.time)%60)).padStart(2,'0')}`:'第一次来？从第一夜开始';
 }
-function hideDialogs(){for(const id of ['#result','#pause-screen','#settings-screen','#challenge-screen','#skin-screen'])$(id).hidden=true;}
+function hideDialogs(){for(const id of ['#result','#pause-screen','#settings-screen','#challenge-screen','#skin-screen','#clues-screen'])$(id).hidden=true;}
 function enterPlay(){hideDialogs();$('#start-screen').hidden=true;$('#hud').hidden=false;game.active=true;enableAudio();keys.clear();lastStatus='';lastMode='';lastToast='';updateUI();persist();}
 function setupLevel(level){game.reset(level);buildHouse();view.mode='overview';view.hasMoved=false;view.yaw=0;view.pitch=-.10;transition.time=1;game.start();enterPlay();}
 function startOrContinue(){
@@ -135,7 +143,7 @@ function returnMenu(){persist();game.active=false;game.velocity={x:0,z:0};keys.c
 function pause(){if(game.status!=='playing'||!game.active)return;persist();game.active=false;game.velocity={x:0,z:0};keys.clear();unlockMouse();$('#pause-screen').hidden=false;}
 function resume(){hideDialogs();game.active=true;keys.clear();enableAudio();}
 function toggleMap(){if(game.status!=='playing'||['catch','reaction'].includes(game.mode?.type))return;view.hasMoved=true;setView(view.mode==='firstPerson'?'overview':'firstPerson');}
-function context(){if(game.mode)return'';const d=game.doorNear(),s=game.spotNear(),c=game.coverNear();if(d)return`E · 推开${d.name}`;if(s)return`E · 搜索${s.name}`;if(game.hidden)return'C · 站起身 · WASD 蹲行';if(c)return`C · 蹲到${c.name}后`;return game.hasDevice?'带设备回到暖光卧室':view.mode==='firstPerson'?'WASD 移动 · 鼠标看向四周':'WASD 移动 · 点击小地图切换视角';}
+function context(){if(game.mode)return'';if(phonePending(game))return'E · 按住静音（先停下）';const tool=game.toolNear();if(tool)return tool.clue?`E · 阅读${tool.name}`:`E · 定时启动${tool.name}（本夜一次）`;const d=game.doorNear(),s=game.spotNear(),c=game.coverNear();if(d)return`E · 推开${d.name}`;if(s)return`E · 搜索${s.name}`;if(game.hidden)return'C · 站起身 · WASD 蹲行';if(c)return`C · 蹲到${c.name}后`;return game.hasDevice?'带设备回到暖光卧室':view.mode==='firstPerson'?'WASD 移动 · 鼠标看向四周':'WASD 移动 · 点击小地图切换视角';}
 function drawMap(target,level,player=null){
   const ctx=target.getContext('2d'),w=target.width,h=target.height,pad=10,maxX=mapWidth(level)-1;
   const unit=player?Math.min(w,h)/(MINIMAP_RADIUS*2+1):Math.min((w-pad*2)/(maxX+1),(h-pad*2)/MAP_DEPTH);
@@ -153,7 +161,14 @@ function buildChallengeCards(){
   const list=$('#challenge-list');list.replaceChildren();
   PRESETS.forEach((p,i)=>{const button=document.createElement('button');button.className='map-card';button.dataset.level=i;button.setAttribute('aria-pressed',String(i===selectedLevel));button.innerHTML=`<canvas width="280" height="208" aria-hidden="true"></canvas><span class="map-number">0${i+1}</span><strong>${p.name}</strong><span>${p.description}</span>`;button.onclick=()=>{selectedLevel=i;for(const b of list.children)b.setAttribute('aria-pressed',String(Number(b.dataset.level)===i));$('#launch-challenge').textContent=`开始 · ${p.name}`;};list.append(button);drawMap(button.querySelector('canvas'),i);});
 }
-function updateUI(){
+let journalResume=false;
+function openJournal(){if(game.status!=='playing'||!$('#clues-screen').hidden)return;journalResume=game.active;if(game.active){persist();game.active=false;game.velocity={x:0,z:0};keys.clear();unlockMouse();}const list=$('#clue-list');list.replaceChildren();if(!game.night.clues.length){const p=document.createElement('p');p.textContent='还没读到线索。先去床头看看便条。';list.append(p);}for(const id of game.night.clues){const article=document.createElement('article'),title=document.createElement('h3'),text=document.createElement('p');title.textContent=CLUES.find(c=>c.id===id).name;text.textContent=clueText(game.level,id);article.append(title,text);list.append(article);}$('#clues-screen').hidden=false;}
+function closeJournal(){$('#clues-screen').hidden=true;if(journalResume)resume();}
+$('#notes-open').onclick=openJournal;$('#notes-close').onclick=closeJournal;
+$('#phone-mute').onpointerdown=e=>{e.preventDefault();game.action();keys.add('e');e.target.setPointerCapture(e.pointerId);};$('#phone-mute').onpointerup=$('#phone-mute').onpointercancel=()=>keys.delete('e');
+function updateNightUI(){const mask=maskAt(game);$('#mask-cue').textContent=mask?`${mask.name}掩护中 · 可直接走过木板`:'留意长鼾声与洗衣机脱水声';$('#mask-cue').classList.toggle('active',!!mask);$('#notes-open').textContent=`线索 ${game.night.clues.length}/2`;
+ const phone=game.night.phone;$('#phone-panel').hidden=!phonePending(game)||!game.active||['catch','reaction'].includes(game.mode?.type);$('#phone-state').textContent=phone.state==='warning'?`来电预兆 · ${Math.max(0,phone.timer).toFixed(1)} 秒后响铃`:'手机正在响铃';$('#phone-hold').style.width=`${Math.min(100,phone.hold/1.2*100)}%`;$('#phone-mute').textContent=padText('停下，按住 E · 1.2 秒静音');$('#phone-help').textContent=game.mode?padText('先按 Esc 停下当前动作，再静音。'):'可蹲着静音；移动会打断进度。';}
+function updateUI(){updateNightUI();
   const p=game.parent,m=game.mode;const cinematic=['catch','reaction'].includes(m?.type);document.body.classList.toggle('incident-active',cinematic&&game.active);$('#incident-caption').hidden=!cinematic;$('#incident-caption').textContent=cinematic?(m.type==='reaction'?(m.success?'接住了。':'糟了，落地了。'):'那一瞬间，时间慢了下来。'):'';$('#objective').textContent=game.hasDevice?'带设备回到卧室':'探索房间，找回设备';$('#device-icon').classList.toggle('found',game.hasDevice);$('#parent-cue').textContent=stateNames[p.state];$('#parent-cue').dataset.state=p.state;$('#context').textContent=context();$('#context').hidden=!context();$('#hide-badge').hidden=!game.hidden;
   $('#preset-title').textContent=`0${game.level+1} / ${PRESETS[game.level].name}`;$('#view-name').textContent=view.mode==='firstPerson'?'第一人称':'全景';$('#minimap-button').setAttribute('aria-label',view.mode==='firstPerson'?'切换第三人称全景':'切换第一人称近景');$('#crosshair').hidden=view.mode!=='firstPerson'||!game.active;
   $('#look-hint').hidden=view.mode!=='firstPerson'||!game.active||game.hidden||!!document.pointerLockElement;drawMap($('#minimap'),game.level,game.player);
@@ -186,13 +201,13 @@ $('#challenges-open').onclick=()=>{selectedLevel=saved?.game?.level||0;buildChal
 $('#launch-challenge').onclick=()=>setupLevel(selectedLevel);$('#begin').onclick=startOrContinue;$('#retry').onclick=()=>setupLevel(game.level);$('#next-night').onclick=()=>setupLevel(game.level+1);$('#pause-button').onclick=pause;$('#resume').onclick=resume;
 for(const b of document.querySelectorAll('[data-menu]'))b.onclick=returnMenu;
 $('#minimap-button').onclick=toggleMap;
-function escape(){if(!$('#skin-screen').hidden){wardrobe.close();return;}if(!$('#settings-screen').hidden){$('#settings-close').click();return;}if(!$('#challenge-screen').hidden){$('#challenge-screen').hidden=true;return;}if(!game.active){if(!$('#pause-screen').hidden)resume();return;}if(game.mode){game.cancel();persist();}else pause();}
+function escape(){if(!$('#clues-screen').hidden){closeJournal();return;}if(!$('#skin-screen').hidden){wardrobe.close();return;}if(!$('#settings-screen').hidden){$('#settings-close').click();return;}if(!$('#challenge-screen').hidden){$('#challenge-screen').hidden=true;return;}if(!game.active){if(!$('#pause-screen').hidden)resume();return;}if(game.mode){game.cancel();persist();}else pause();}
 const movementKeys=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();if(e.target.matches('input,select')&&k!=='escape')return;
   if(k==='escape'){e.preventDefault();escape();return;}if(!game.active||game.status!=='playing')return;
   if([...movementKeys,' ','tab'].includes(k))e.preventDefault();
-  if(k==='tab'){unlockMouse();return;}if(k==='m'&&!e.repeat){toggleMap();return;}
+  if(k==='j'&&!e.repeat){openJournal();return;}if(k==='tab'){unlockMouse();return;}if(k==='m'&&!e.repeat){toggleMap();return;}
   keys.add(k);if(movementKeys.includes(k)&&!view.hasMoved){view.hasMoved=true;setView('firstPerson');keys.add(k);}
   if(e.repeat)return;if(k==='e'){game.action();persist();}if(k===' '){game.pressSpace();persist();}if(k==='c'){game.hide();persist();}
 });
@@ -204,7 +219,7 @@ window.addEventListener('blur',pause);document.addEventListener('visibilitychang
 window.addEventListener('wheel',e=>{if(game.active&&game.mode?.type==='door'){e.preventDefault();game.speed=clamp(game.speed-e.deltaY*.0006,.05,1);}},{passive:false});
 $('#door-speed').oninput=e=>game.speed=Number(e.target.value);$('#timing-button').onclick=()=>game.pressSpace();$('#cancel-action').onclick=()=>game.cancel();
 $('#push-door').onpointerdown=e=>{e.preventDefault();keys.add('e');e.target.setPointerCapture(e.pointerId);};$('#push-door').onpointerup=()=>keys.delete('e');$('#push-door').onpointercancel=()=>keys.delete('e');
-$('#context').onclick=()=>{if(game.doorNear()||game.spotNear())game.action();else game.hide();};
+$('#context').onclick=()=>{if(phonePending(game)||game.toolNear()||game.doorNear()||game.spotNear())game.action();else game.hide();};
 for(const el of document.querySelectorAll('[data-move]')){el.onpointerdown=e=>{e.preventDefault();if(!view.hasMoved){view.hasMoved=true;setView('firstPerson');}keys.add(el.dataset.move);el.setPointerCapture(e.pointerId);};el.onpointerup=()=>keys.delete(el.dataset.move);el.onpointercancel=()=>keys.delete(el.dataset.move);}
 // Controller input is polled even while menus are open; it never synthesizes keyboard events.
 const padInput=new GamepadInput(),menuRepeat=new MenuRepeat();
@@ -231,7 +246,7 @@ function updateControllerHints(){
   set('#push-door',pad?'按住 □ · 推门':'按住这里 / E · 推门');
   for(const selector of ['#context','#subtitle','#timing-help','#timing-button'])set(selector,padText($(selector).textContent));
 }
-function menuRoot(){for(const id of ['skin-screen','settings-screen','challenge-screen','result','pause-screen','start-screen'])if(!$('#'+id).hidden)return $('#'+id);return null;}
+function menuRoot(){for(const id of ['clues-screen','skin-screen','settings-screen','challenge-screen','result','pause-screen','start-screen'])if(!$('#'+id).hidden)return $('#'+id);return null;}
 function menuItems(root){return [...root.querySelectorAll('button,input,a[href]')].filter(el=>!el.disabled&&!el.closest('[hidden]')&&el.getClientRects().length);}
 function focusControl(el){
   document.querySelectorAll('.gamepad-focus').forEach(item=>item.classList.remove('gamepad-focus'));controllerFocus=el;
@@ -239,7 +254,7 @@ function focusControl(el){
 }
 function menuInput(root,frame,now){
   const items=menuItems(root);if(!items.length)return;
-  if(!items.includes(controllerFocus))focusControl(root.querySelector(root.id==='skin-screen'?'[data-skin="'+wardrobe.selected+'"]':root.id==='settings-screen'?'[data-setting="master"]':root.id==='challenge-screen'?'[aria-pressed="true"]':root.id==='pause-screen'?'#resume':root.id==='result'?'#next-night:not([hidden]),#retry':'#begin:not(:disabled)')||items[0]);
+  if(!items.includes(controllerFocus))focusControl(root.querySelector(root.id==='clues-screen'?'#notes-close':root.id==='skin-screen'?'[data-skin="'+wardrobe.selected+'"]':root.id==='settings-screen'?'[data-setting="master"]':root.id==='challenge-screen'?'[aria-pressed="true"]':root.id==='pause-screen'?'#resume':root.id==='result'?'#next-night:not([hidden]),#retry':'#begin:not(:disabled)')||items[0]);
   if(inputDevice==='gamepad'&&!controllerFocus.classList.contains('gamepad-focus'))focusControl(controllerFocus);
   const h=frame.held,direction=h[12]?'up':h[13]?'down':h[14]?'left':h[15]?'right':Math.abs(frame.left.y)>.5?(frame.left.y<0?'up':'down'):Math.abs(frame.left.x)>.5?(frame.left.x<0?'left':'right'):'';
   const step=menuRepeat.update(direction,now);
@@ -248,7 +263,7 @@ function menuInput(root,frame,now){
       const el=controllerFocus,delta=Number(el.step)||.05;el.value=clamp(Number(el.value)+(step==='left'?-delta:delta),Number(el.min),Number(el.max));el.dispatchEvent(new Event('input',{bubbles:true}));
     }else{const offset=['up','left'].includes(step)?-1:1;focusControl(items[(items.indexOf(controllerFocus)+offset+items.length)%items.length]);}
   }
-  if(frame.pressed[BUTTON.back]){if(root.id==='skin-screen')wardrobe.close();else if(root.id==='settings-screen')$('#settings-close').click();else if(root.id==='challenge-screen')$('#challenges-close').click();else if(root.id==='pause-screen')resume();else if(root.id==='result')returnMenu();}
+  if(frame.pressed[BUTTON.back]){if(root.id==='clues-screen')closeJournal();else if(root.id==='skin-screen')wardrobe.close();else if(root.id==='settings-screen')$('#settings-close').click();else if(root.id==='challenge-screen')$('#challenges-close').click();else if(root.id==='pause-screen')resume();else if(root.id==='result')returnMenu();}
   else if(frame.pressed[BUTTON.pause]&&root.id==='pause-screen')resume();
   else if(frame.pressed[BUTTON.confirm]&&!controllerFocus.matches('input[type="range"]'))controllerFocus.click();
 }
@@ -262,6 +277,7 @@ function pollController(now,dt){
   if(context!==controllerContext){controllerContext=context;controllerFocus=null;menuRepeat.reset();padInput.inhibit();frame=emptyFrame();}
   if(root){if(root.id==='skin-screen')wardrobe?.rotate(frame.right.x*dt*2.4);if(inputDevice==='gamepad')menuInput(root,frame,now);return emptyFrame();}
   if(!game.active||game.status!=='playing')return emptyFrame();
+  if(frame.pressed[8]){openJournal();return emptyFrame();}
   if(frame.pressed[BUTTON.pause]){pause();return emptyFrame();}
   const cinematic=['catch','reaction'].includes(game.mode?.type);
   if(!cinematic&&(frame.left.x||frame.left.y)&&!view.hasMoved){view.hasMoved=true;setView('firstPerson');}
@@ -295,7 +311,7 @@ function animate(now){
     if(now-lastSave>900){persist();lastSave=now;}
   }
   soundscape?.state(game.active&&game.status==='playing',game.parent.state);
-  for(const e of game.events.splice(0))if(e.type==='sound')sound(e.kind,e.strength,e.x,e.z);
+  for(const e of game.events.splice(0)){if(e.type==='sound')sound(e.kind,e.strength,e.x,e.z);if(e.type==='clue')openJournal();}
   const traveled=distance(old,game.player),moving=traveled>.0001;walkPhase+=traveled*8;
   playerMesh.position.set(game.player.x,0,game.player.z);const angle=game.player.heading-playerMesh.rotation.y;playerMesh.rotation.y+=Math.atan2(Math.sin(angle),Math.cos(angle))*Math.min(1,dt*16);
   const body=playerMesh.userData.body;body.position.y=moving?Math.abs(Math.sin(walkPhase))*.025:0;body.scale.y=THREE.MathUtils.damp(body.scale.y,game.hidden?.65:1,16,dt);body.rotation.x=game.hidden?-.12:0;
@@ -321,9 +337,10 @@ function animate(now){
   parentLight.visible=['checking','returning'].includes(p.state);parentLight.position.set(p.x,1.25,p.z);parentTarget.position.set(p.x+Math.sin(p.heading)*4,.05,p.z+Math.cos(p.heading)*4);
   for(const{d,pivot}of doorMeshes)pivot.rotation.y=d.progress*Math.PI*.49;
   for(const{s,mesh,marker}of spotMeshes){marker.visible=!s.searched&&distance(s,game.player)<2&&!occluded(game.player,s,game.level,game.doors,true,s.id);}
+  updateNightProps(nightProps,game);const nearest=game.toolNear();for(const {item,marker}of toolLabels)marker.visible=game.active&&nearest?.id===item.id;chargerLamp.visible=!game.hasDevice;
   stepTarget.visible=game.mode?.type==='step';if(stepTarget.visible)stepTarget.position.set(game.mode.target.x,.045,game.mode.target.z);
   vaseMesh.rotation.z=game.vase==='wobbling'?Math.sin(now*.023)*.32:game.vase==='fallen'?Math.PI/2:0;vaseMesh.position.y=game.vase==='fallen'?.18:.88;
-  wallBlend=THREE.MathUtils.damp(wallBlend,fp?1:0,9,dt);for(const{mesh,cap,height}of wallMeshes){const h=THREE.MathUtils.lerp(height,2.6,wallBlend);mesh.scale.y=h/2.6;mesh.position.y=h/2;cap.position.y=h-.015;}ceiling.visible=fp&&wallBlend>.99;for(const m of openingMeshes)m.visible=fp;for(const l of worldLabels)if(!spotMeshes.some(s=>s.marker===l))l.visible=!fp;
+  wallBlend=THREE.MathUtils.damp(wallBlend,fp?1:0,9,dt);for(const{mesh,cap,height}of wallMeshes){const h=THREE.MathUtils.lerp(height,2.6,wallBlend);mesh.scale.y=h/2.6;mesh.position.y=h/2;cap.position.y=h-.015;}ceiling.visible=fp&&wallBlend>.99;for(const m of openingMeshes)m.visible=fp;for(const l of worldLabels)if(!spotMeshes.some(s=>s.marker===l)&&!toolLabels.some(s=>s.marker===l))l.visible=!fp;
   const targetPos=new THREE.Vector3(),targetRotation=new THREE.Quaternion();
   eyeHeight=THREE.MathUtils.damp(eyeHeight,game.hidden?.85:1.37,16,dt);
   if(fp){const bob=settings.headBob&&moving?Math.sin(walkPhase)*.013:0;targetPos.set(game.player.x,eyeHeight+bob,game.player.z);targetRotation.setFromEuler(new THREE.Euler(view.pitch,-view.yaw,0,'YXZ'));}
@@ -344,4 +361,4 @@ async function boot(){
   catch(e){$('#loading').replaceChildren();const text=document.createElement('p');text.textContent='角色模型未能载入。请检查网络后重试。';const b=document.createElement('button');b.className='primary';b.textContent='重新载入';b.onclick=()=>location.reload();$('#loading').append(text,b);console.error(e);}
 }
 requestAnimationFrame(animate);boot();
-window.gameSnapshot=()=>({ready:sceneReady,status:game.status,active:game.active,level:game.level,player:{...game.player},parent:{...game.parent,route:undefined},mode:game.mode?.type,hasDevice:game.hasDevice,hidden:game.hidden,time:game.time,realTime:game.realTime,incident:game.mode?.incidentId?{id:game.mode.incidentId,type:game.mode.type,elapsed:game.mode.elapsed,remaining:game.mode.remaining,success:game.mode.success}:null,performance:game.performance(),metrics:{...game.metrics},fps,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,doors:game.doors.map(d=>({x:d.x,z:d.z,open:d.open,progress:d.progress})),vase:game.vase,view:{...view},camera:camera.position.toArray(),velocity:{...game.velocity},modelLoaded:!!assetTemplate,skin:{equipped:equippedSkin,rendered:playerMesh?.userData.skinId,preview:wardrobe?.selected,previewReady:wardrobe?.ready,open:!$('#skin-screen').hidden},settings:{...settings},controller:{connected:padInput.connected,standard:padInput.connected,index:padInput.index,inputDevice,blocked:padInput.blocked,context:controllerContext},map:{width:mapWidth(game.level),depth:MAP_DEPTH,radius:MINIMAP_RADIUS,markedFloors:false},recognitionTime:RECOGNITION_TIME,parentRender:{skin:parentMesh?.userData.skinId,visible:parentMesh?.visible??false,model:parentMesh?.userData.role==='parent'?'peak':'loading',pose:game.parent.state,position:parentMesh?.position.toArray()??[]},audio:soundscape?{state:audioContext.state,...soundscape.stats}:null});
+window.gameSnapshot=()=>({ready:sceneReady,status:game.status,active:game.active,level:game.level,player:{...game.player},parent:{...game.parent,route:undefined},mode:game.mode?.type,hasDevice:game.hasDevice,hidden:game.hidden,time:game.time,realTime:game.realTime,incident:game.mode?.incidentId?{id:game.mode.incidentId,type:game.mode.type,elapsed:game.mode.elapsed,remaining:game.mode.remaining,success:game.mode.success}:null,performance:game.performance(),metrics:{...game.metrics},fps,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,doors:game.doors.map(d=>({x:d.x,z:d.z,open:d.open,progress:d.progress})),vase:game.vase,view:{...view},camera:camera.position.toArray(),velocity:{...game.velocity},modelLoaded:!!assetTemplate,night:{...structuredClone(game.night),mask:maskAt(game),nearTool:game.toolNear()?.id},skin:{equipped:equippedSkin,rendered:playerMesh?.userData.skinId,preview:wardrobe?.selected,previewReady:wardrobe?.ready,open:!$('#skin-screen').hidden},settings:{...settings},controller:{connected:padInput.connected,standard:padInput.connected,index:padInput.index,inputDevice,blocked:padInput.blocked,context:controllerContext},map:{width:mapWidth(game.level),depth:MAP_DEPTH,radius:MINIMAP_RADIUS,markedFloors:false},recognitionTime:RECOGNITION_TIME,parentRender:{skin:parentMesh?.userData.skinId,visible:parentMesh?.visible??false,model:parentMesh?.userData.role==='parent'?'peak':'loading',pose:game.parent.state,position:parentMesh?.position.toArray()??[]},audio:soundscape?{state:audioContext.state,...soundscape.stats}:null});
