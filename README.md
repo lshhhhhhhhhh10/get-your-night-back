@@ -146,3 +146,21 @@ npm run build
 `source/gamepad.js` 负责径向死区、按键边沿、持有手柄与菜单重复；`source/main.js` 负责菜单和游戏动作分发。只使用 `mapping === "standard"` 的设备，不推断原始布局。拔插、失焦和切换菜单时清除遗留输入，松开后才能继续。存档结构不变，不保存物理按键状态。
 
 浏览器依据：[Gamepad API 与首次识别](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API)、[Web Audio 用户交互限制](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)。本轮通过 Chrome 模拟手柄进行自动检查，尚未实测实体 DualSense USB；不承诺自适应扳机或 PS5 专有触觉功能。
+
+
+## 皮肤衣柜（v0.7.0）
+
+主菜单 → 皮肤衣柜 → 选择外观 → 旋转预览 → 穿上这套。提供围巾、螃蟹、厨师、纸箱、抱枕和睡帽六套，全部直接可用。鼠标拖动或转身按钮旋转；手柄方向键选择、× 确认、○ 返回，右摇杆旋转预览。
+
+外观仅影响玩家模型。速度、声音、碰撞、识别和评分均不变，家长仍保留原角色。选择卡只预览，确认后更新游戏里的角色；刷新、续玩及换关保留外观，关卡进度不会被覆盖。存储不可用时当次仍可穿上，并显示不能保存的提示。
+
+- `source/skins.js`：六套目录、稳定 ID 与 `night-back:skin:v1` 独立保存。
+- `source/skin-model.js`：模型克隆、改装配件和独立材质；共享模型不会被其他皮肤污染。
+- `source/wardrobe.js`：三维预览、旋转、确认、载入失败重试和快速选择保护。
+- `assets/models/peak-character-{1,2}.glb`：附件新增螃蟹与厨师模型；原第三角色继续共用。
+- `assets/skins/`：从运行时实际模型截取的六张缩略图。
+- `source/tools/export-wardrobe.py`：新增附件模型的 Blender 处理脚本；运行参数为角色编号（1 或 2）与解压后的附件根目录。附件仍需学生自行提供，不把整个原 Blender 工程复制到仓库。
+
+原人体和前三套造型来自学生提供的 ZIP；三套改装也使用附件人体，仅纸箱、抱枕耳罩与睡帽等配件为本项目自制。没有从其他商业游戏提取新角色，不宣称素材由 Codex 原创或与 PEAK 官方关联。详见 `assets/models/README.md` 和各角色 provenance。
+
+增加两份 GLB，按需加载并以路径缓存；改装共用已有 GLB。未新增外部依赖或付费服务。

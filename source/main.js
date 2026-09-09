@@ -1,3 +1,6 @@
+import {skinById,readSkin,saveSkin} from './skins.js';
+import {createSkinModel,disposeSkinModel} from './skin-model.js';
+import {Wardrobe} from './wardrobe.js';
 import {GamepadInput,MenuRepeat,BUTTON,emptyFrame} from './gamepad.js';
 import {INCIDENTS,CATCH_INTRO} from './incidents.js';
 import {IncidentCamera} from './cinematic.js';
@@ -5,7 +8,6 @@ import {furnitureFor,OPENINGS,PARENT_BED} from './layout.js';
 import {createFurniture} from './furniture.js';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {clone as cloneRig} from 'three/addons/utils/SkeletonUtils.js';
 import {readSettings,readSession,saveSession,writeJSON,SETTINGS_KEY} from './persistence.js';
 import {Soundscape} from './audio.js';
 import {Game,PRESETS,HOME,MAP_DEPTH,mapWidth,MINIMAP_RADIUS,RECOGNITION_TIME,wall,occluded,distance,clamp} from './engine.js';
@@ -14,6 +16,8 @@ const $=s=>document.querySelector(s),canvas=$('#world');
 const game=new Game(0),keys=new Set(),incidentCamera=new IncidentCamera();
 let storage;try{storage=window.localStorage;}catch{storage={getItem:()=>null,setItem:()=>{throw Error('unavailable')}};}
 const settings=readSettings(storage);
+let equippedSkin=readSkin(storage),wardrobe;const skinTemplates=new Map(),skinRequests=new Map();
+async function loadSkinTemplate(id){const url=skinById(id).model;if(skinTemplates.has(url))return skinTemplates.get(url);if(!skinRequests.has(url))skinRequests.set(url,new GLTFLoader().loadAsync(url).then(gltf=>{skinTemplates.set(url,gltf.scene);skinRequests.delete(url);return gltf.scene;}).catch(error=>{skinRequests.delete(url);throw error;}));return skinRequests.get(url);}
 const view={mode:'overview',hasMoved:false,yaw:0,pitch:-.10};
 let assetTemplate,wallMeshes=[],openingMeshes=[],worldLabels=[],ceiling,sceneReady=false;
 let renderer;
@@ -31,16 +35,17 @@ function cyl(rt,rb,h,c,x,y,z,parent=house,n=12){const m=new THREE.Mesh(new THREE
 function label(text,x,y,z,color='#c8d6ee',size=.7){const c=document.createElement('canvas');c.width=512;c.height=96;const ctx=c.getContext('2d');ctx.font='500 38px sans-serif';ctx.textAlign='center';ctx.fillStyle=color;ctx.fillText(text,256,59);const t=new THREE.CanvasTexture(c);const m=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:true}));m.scale.set(size*3,size*.56,1);m.position.set(x,y,z);house.add(m);worldLabels.push(m);return m;}
 function createPlayer(parent=false){
   const g=new THREE.Group(),body=new THREE.Group();g.add(body);
-  const asset=cloneRig(assetTemplate);body.add(asset);const bones={};
+  const skinId=parent?'scarf':equippedSkin,template=parent?assetTemplate:skinTemplates.get(skinById(skinId).model)||assetTemplate;
+  const asset=createSkinModel(template,skinId);body.add(asset);const bones={};
   asset.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false;}if(o.isBone){bones[o.name]={bone:o,rest:o.quaternion.clone()};}});
   if(parent){
     g.scale.setScalar(1.12);
     asset.traverse(o=>{if(o.isMesh&&/CLOTHES|Scarf/i.test(o.name)){const tint=m=>{const copy=m.clone();copy.color.multiply(new THREE.Color('#aca6d8'));copy.userData.parentOwned=true;return copy;};o.material=Array.isArray(o.material)?o.material.map(tint):tint(o.material);}});
   }
-  g.userData={body,asset,bones,role:parent?'parent':'player'};house.add(g);return g;
+  g.userData={body,asset,bones,skinId,role:parent?'parent':'player'};house.add(g);return g;
 }
 function buildHouse(){
-  scene.remove(house);house.traverse(o=>{if(!o.isSkinnedMesh)o.geometry?.dispose();if(o.isSprite)o.material?.map?.dispose();for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.parentOwned)m.dispose();});house=new THREE.Group();scene.add(house);doorMeshes=[];spotMeshes=[];wallMeshes=[];openingMeshes=[];worldLabels=[];
+  scene.remove(house);house.traverse(o=>{if(!o.isSkinnedMesh)o.geometry?.dispose();if(o.isSprite)o.material?.map?.dispose();for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.parentOwned||m?.userData.skinOwned)m.dispose();});house=new THREE.Group();scene.add(house);doorMeshes=[];spotMeshes=[];wallMeshes=[];openingMeshes=[];worldLabels=[];
   const maxX=mapWidth(game.level)-1,center=maxX/2,depth=MAP_DEPTH,cz=(depth-1)/2;
   box(maxX+1,.45,15,'#29374b',center,-.31,7);box(maxX+1.25,.16,15.25,'#40526a',center,-.6,7);
   box(maxX-9,.45,4,'#29374b',(maxX+10)/2,-.31,16.5);box(maxX-8.75,.16,4.25,'#40526a',(maxX+10)/2,-.6,16.5);
@@ -114,7 +119,7 @@ function persist(){if(game.status!=='ready'&&sceneReady){saveSession(storage,gam
 function updateStartLabel(){
   const s=saved?.game;$('#continue-detail').textContent=s?s.status==='won'?`继续 · 第 ${Math.min(3,s.level+2)} 夜`:s.status==='restart'?`布置已更新 · 重开第 ${s.level+1} 夜`:s.status==='lost'?`重试 · 第 ${s.level+1} 夜`:`继续 · 第 ${s.level+1} 夜 · ${Math.floor((s.realTime??s.time)/60)}:${String(Math.floor((s.realTime??s.time)%60)).padStart(2,'0')}`:'第一次来？从第一夜开始';
 }
-function hideDialogs(){for(const id of ['#result','#pause-screen','#settings-screen','#challenge-screen'])$(id).hidden=true;}
+function hideDialogs(){for(const id of ['#result','#pause-screen','#settings-screen','#challenge-screen','#skin-screen'])$(id).hidden=true;}
 function enterPlay(){hideDialogs();$('#start-screen').hidden=true;$('#hud').hidden=false;game.active=true;enableAudio();keys.clear();lastStatus='';lastMode='';lastToast='';updateUI();persist();}
 function setupLevel(level){game.reset(level);buildHouse();view.mode='overview';view.hasMoved=false;view.yaw=0;view.pitch=-.10;transition.time=1;game.start();enterPlay();}
 function startOrContinue(){
@@ -181,7 +186,7 @@ $('#challenges-open').onclick=()=>{selectedLevel=saved?.game?.level||0;buildChal
 $('#launch-challenge').onclick=()=>setupLevel(selectedLevel);$('#begin').onclick=startOrContinue;$('#retry').onclick=()=>setupLevel(game.level);$('#next-night').onclick=()=>setupLevel(game.level+1);$('#pause-button').onclick=pause;$('#resume').onclick=resume;
 for(const b of document.querySelectorAll('[data-menu]'))b.onclick=returnMenu;
 $('#minimap-button').onclick=toggleMap;
-function escape(){if(!$('#settings-screen').hidden){$('#settings-close').click();return;}if(!$('#challenge-screen').hidden){$('#challenge-screen').hidden=true;return;}if(!game.active){if(!$('#pause-screen').hidden)resume();return;}if(game.mode){game.cancel();persist();}else pause();}
+function escape(){if(!$('#skin-screen').hidden){wardrobe.close();return;}if(!$('#settings-screen').hidden){$('#settings-close').click();return;}if(!$('#challenge-screen').hidden){$('#challenge-screen').hidden=true;return;}if(!game.active){if(!$('#pause-screen').hidden)resume();return;}if(game.mode){game.cancel();persist();}else pause();}
 const movementKeys=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'];
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();if(e.target.matches('input,select')&&k!=='escape')return;
@@ -226,7 +231,7 @@ function updateControllerHints(){
   set('#push-door',pad?'按住 □ · 推门':'按住这里 / E · 推门');
   for(const selector of ['#context','#subtitle','#timing-help','#timing-button'])set(selector,padText($(selector).textContent));
 }
-function menuRoot(){for(const id of ['settings-screen','challenge-screen','result','pause-screen','start-screen'])if(!$('#'+id).hidden)return $('#'+id);return null;}
+function menuRoot(){for(const id of ['skin-screen','settings-screen','challenge-screen','result','pause-screen','start-screen'])if(!$('#'+id).hidden)return $('#'+id);return null;}
 function menuItems(root){return [...root.querySelectorAll('button,input,a[href]')].filter(el=>!el.disabled&&!el.closest('[hidden]')&&el.getClientRects().length);}
 function focusControl(el){
   document.querySelectorAll('.gamepad-focus').forEach(item=>item.classList.remove('gamepad-focus'));controllerFocus=el;
@@ -234,7 +239,7 @@ function focusControl(el){
 }
 function menuInput(root,frame,now){
   const items=menuItems(root);if(!items.length)return;
-  if(!items.includes(controllerFocus))focusControl(root.querySelector(root.id==='settings-screen'?'[data-setting="master"]':root.id==='challenge-screen'?'[aria-pressed="true"]':root.id==='pause-screen'?'#resume':root.id==='result'?'#next-night:not([hidden]),#retry':'#begin:not(:disabled)')||items[0]);
+  if(!items.includes(controllerFocus))focusControl(root.querySelector(root.id==='skin-screen'?'[data-skin="'+wardrobe.selected+'"]':root.id==='settings-screen'?'[data-setting="master"]':root.id==='challenge-screen'?'[aria-pressed="true"]':root.id==='pause-screen'?'#resume':root.id==='result'?'#next-night:not([hidden]),#retry':'#begin:not(:disabled)')||items[0]);
   if(inputDevice==='gamepad'&&!controllerFocus.classList.contains('gamepad-focus'))focusControl(controllerFocus);
   const h=frame.held,direction=h[12]?'up':h[13]?'down':h[14]?'left':h[15]?'right':Math.abs(frame.left.y)>.5?(frame.left.y<0?'up':'down'):Math.abs(frame.left.x)>.5?(frame.left.x<0?'left':'right'):'';
   const step=menuRepeat.update(direction,now);
@@ -243,7 +248,7 @@ function menuInput(root,frame,now){
       const el=controllerFocus,delta=Number(el.step)||.05;el.value=clamp(Number(el.value)+(step==='left'?-delta:delta),Number(el.min),Number(el.max));el.dispatchEvent(new Event('input',{bubbles:true}));
     }else{const offset=['up','left'].includes(step)?-1:1;focusControl(items[(items.indexOf(controllerFocus)+offset+items.length)%items.length]);}
   }
-  if(frame.pressed[BUTTON.back]){if(root.id==='settings-screen')$('#settings-close').click();else if(root.id==='challenge-screen')$('#challenges-close').click();else if(root.id==='pause-screen')resume();else if(root.id==='result')returnMenu();}
+  if(frame.pressed[BUTTON.back]){if(root.id==='skin-screen')wardrobe.close();else if(root.id==='settings-screen')$('#settings-close').click();else if(root.id==='challenge-screen')$('#challenges-close').click();else if(root.id==='pause-screen')resume();else if(root.id==='result')returnMenu();}
   else if(frame.pressed[BUTTON.pause]&&root.id==='pause-screen')resume();
   else if(frame.pressed[BUTTON.confirm]&&!controllerFocus.matches('input[type="range"]'))controllerFocus.click();
 }
@@ -255,7 +260,7 @@ function pollController(now,dt){
   if(frame.activity)useInput('gamepad');
   const root=menuRoot(),context=root?.id||'play';
   if(context!==controllerContext){controllerContext=context;controllerFocus=null;menuRepeat.reset();padInput.inhibit();frame=emptyFrame();}
-  if(root){if(inputDevice==='gamepad')menuInput(root,frame,now);return emptyFrame();}
+  if(root){if(root.id==='skin-screen')wardrobe?.rotate(frame.right.x*dt*2.4);if(inputDevice==='gamepad')menuInput(root,frame,now);return emptyFrame();}
   if(!game.active||game.status!=='playing')return emptyFrame();
   if(frame.pressed[BUTTON.pause]){pause();return emptyFrame();}
   const cinematic=['catch','reaction'].includes(game.mode?.type);
@@ -328,12 +333,15 @@ function animate(now){
   const fov=fp?78:43;if(camera.fov!==fov){camera.fov=THREE.MathUtils.damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();}
   if(game.mode?.type==='step'||game.mode?.type==='catch')$('#pointer').style.left=`${game.pointer*100}%`;
   if(['catch','reaction'].includes(game.mode?.type)){$('#incident-caption').textContent=game.mode.type==='reaction'?(game.mode.success?'接住了。':'糟了，落地了。'):'那一瞬间，时间慢了下来。';$('#interaction').hidden=game.mode.type==='reaction'||!game.active;}
-  if(['catch','reaction'].includes(game.mode?.type))incidentCamera.render(renderer,game.mode,camera.aspect);else renderer.render(scene,camera);if(now-lastUi>80){updateUI();lastUi=now;}
+  if(['catch','reaction'].includes(game.mode?.type))incidentCamera.render(renderer,game.mode,camera.aspect);else renderer.render(scene,camera);wardrobe?.render(now);if(now-lastUi>80){updateUI();lastUi=now;}
 }
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}window.addEventListener('resize',resize);
 async function boot(){
-  try{const gltf=await new GLTFLoader().loadAsync('assets/models/peak-character.glb');assetTemplate=gltf.scene;buildHouse();sceneReady=true;resize();updateStartLabel();syncSettings();$('#loading').hidden=true;$('#begin').disabled=false;}
+  try{assetTemplate=await loadSkinTemplate('scarf');try{await loadSkinTemplate(equippedSkin);}catch{equippedSkin='scarf';}
+  wardrobe=new Wardrobe({loadTemplate:loadSkinTemplate,equipped:equippedSkin,onEquip:async id=>{await loadSkinTemplate(id);equippedSkin=id;const old=playerMesh;playerMesh=createPlayer();playerMesh.position.copy(old.position);playerMesh.rotation.copy(old.rotation);house.remove(old);disposeSkinModel(old);phoneMesh.geometry.dispose();phoneMesh.children.forEach(o=>o.geometry?.dispose());phoneMesh=box(.15,.26,.035,'#293349',.30,.45,.20,playerMesh.userData.body);box(.11,.19,.015,'#9bcbc6',0,0,.026,phoneMesh);phoneMesh.visible=game.hasDevice;$('#skins-open small').textContent=skinById(id).name;const stored=saveSkin(storage,id);$('#skin-save-status').textContent=stored?'已穿上，并保存在这台浏览器。':'已穿上；浏览器未允许保存，关闭页面后可能恢复。';},onClose:()=>{}});
+  $('#skins-open').onclick=()=>{enableAudio();$('#skin-save-status').textContent='外观不改变移动、声音、评分或被发现的规则。';wardrobe.open();};$('#skins-open').disabled=false;$('#skins-open small').textContent=skinById(equippedSkin).name;
+  buildHouse();sceneReady=true;resize();updateStartLabel();syncSettings();$('#loading').hidden=true;$('#begin').disabled=false;}
   catch(e){$('#loading').replaceChildren();const text=document.createElement('p');text.textContent='角色模型未能载入。请检查网络后重试。';const b=document.createElement('button');b.className='primary';b.textContent='重新载入';b.onclick=()=>location.reload();$('#loading').append(text,b);console.error(e);}
 }
 requestAnimationFrame(animate);boot();
-window.gameSnapshot=()=>({ready:sceneReady,status:game.status,active:game.active,level:game.level,player:{...game.player},parent:{...game.parent,route:undefined},mode:game.mode?.type,hasDevice:game.hasDevice,hidden:game.hidden,time:game.time,realTime:game.realTime,incident:game.mode?.incidentId?{id:game.mode.incidentId,type:game.mode.type,elapsed:game.mode.elapsed,remaining:game.mode.remaining,success:game.mode.success}:null,performance:game.performance(),metrics:{...game.metrics},fps,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,doors:game.doors.map(d=>({x:d.x,z:d.z,open:d.open,progress:d.progress})),vase:game.vase,view:{...view},camera:camera.position.toArray(),velocity:{...game.velocity},modelLoaded:!!assetTemplate,settings:{...settings},controller:{connected:padInput.connected,standard:padInput.connected,index:padInput.index,inputDevice,blocked:padInput.blocked,context:controllerContext},map:{width:mapWidth(game.level),depth:MAP_DEPTH,radius:MINIMAP_RADIUS,markedFloors:false},recognitionTime:RECOGNITION_TIME,parentRender:{visible:parentMesh?.visible??false,model:parentMesh?.userData.role==='parent'?'peak':'loading',pose:game.parent.state,position:parentMesh?.position.toArray()??[]},audio:soundscape?{state:audioContext.state,...soundscape.stats}:null});
+window.gameSnapshot=()=>({ready:sceneReady,status:game.status,active:game.active,level:game.level,player:{...game.player},parent:{...game.parent,route:undefined},mode:game.mode?.type,hasDevice:game.hasDevice,hidden:game.hidden,time:game.time,realTime:game.realTime,incident:game.mode?.incidentId?{id:game.mode.incidentId,type:game.mode.type,elapsed:game.mode.elapsed,remaining:game.mode.remaining,success:game.mode.success}:null,performance:game.performance(),metrics:{...game.metrics},fps,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,doors:game.doors.map(d=>({x:d.x,z:d.z,open:d.open,progress:d.progress})),vase:game.vase,view:{...view},camera:camera.position.toArray(),velocity:{...game.velocity},modelLoaded:!!assetTemplate,skin:{equipped:equippedSkin,rendered:playerMesh?.userData.skinId,preview:wardrobe?.selected,previewReady:wardrobe?.ready,open:!$('#skin-screen').hidden},settings:{...settings},controller:{connected:padInput.connected,standard:padInput.connected,index:padInput.index,inputDevice,blocked:padInput.blocked,context:controllerContext},map:{width:mapWidth(game.level),depth:MAP_DEPTH,radius:MINIMAP_RADIUS,markedFloors:false},recognitionTime:RECOGNITION_TIME,parentRender:{skin:parentMesh?.userData.skinId,visible:parentMesh?.visible??false,model:parentMesh?.userData.role==='parent'?'peak':'loading',pose:game.parent.state,position:parentMesh?.position.toArray()??[]},audio:soundscape?{state:audioContext.state,...soundscape.stats}:null});

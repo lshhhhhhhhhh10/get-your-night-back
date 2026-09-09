@@ -701,3 +701,65 @@ https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.6.0 已生效
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 学生尚未体验手柄版。等待学生用数据 USB 线连接自己的 DualSense，反馈浏览器识别、摇杆手感与按键提示；没有待批准的实现决策。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 22 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 菜单皮肤衣柜
+**Current Goal:** 提供多个造型，在菜单预览、换肤并保存
+**Git Tag / Commit:** 基于 v0.6.1 / b154e70；本轮实现归入 v0.7.0
+
+### Student Prompt
+“为这个游戏做一个皮肤系统，多抄一些类似游戏的人物模型，然后放在菜单页面用于换皮肤”。
+
+### Agent Response Summary
+检查用户既有角色附件，发现尚未使用的螃蟹与厨师造型。使用这两套附件模型与原围巾角色，再制作纸箱、抱枕和睡帽三种改装，共六套外观。没有从其他商业游戏提取模型。新增菜单衣柜、三维旋转预览、确认穿上和独立本机保存，沿用手柄导航。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 六套全部可选，不引入货币、购买或解锁任务；保持探索游戏的范围。
+- 只更换玩家外观，不改变家长、碰撞、移动、噪声、评分或识别规则。
+- 选择仅预览，点击“穿上这套”才生效；按模型路径缓存、按需载入，避免初始下载全部角色。
+- 纸箱、抱枕耳罩和睡帽为程序化自制配件，基础人体仍来自附件，不能宣称整套角色原创。
+
+### Development Action
+用本地 Blender 修复附件贴图、减面并补基础骨骼，导出新增两个 GLB。制作外观清单、模型装配、衣柜预览与手柄接入。Blender 初次在受限环境启动崩溃，正常权限启动后成功导出。
+
+### Files / Mechanics Changed
+source/skins.js、source/skin-model.js、source/wardrobe.js、source/main.js、source/tools/export-wardrobe.py、assets/models、game.html、assets/style.css。
+
+### Immediate Result
+模型导出与构建通过，正在核对六套实际画面、换肤保存和手柄操作；尚未上线。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+尚未收到学生对六套外观的反馈。继续检查并发布衣柜，完成后等待学生体验造型与选择流程。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 23 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 六套皮肤与完整游玩验证
+**Current Goal:** 确认外观更换、保存、预览和原游戏共同正常运行
+**Git Tag / Commit:** v0.7.0
+
+### Student Prompt
+延续增加多套人物外观与菜单皮肤系统的要求，完成实现和发布。
+
+### Agent Response Summary
+六套外观均通过穿戴与预览分离、刷新保存、续玩保持、家长外观独立及手柄衣柜检查。新螃蟹角色使用模拟 PS5 输入完整完成第一关，两扇门、四次落脚、一次接物和返程评分正常，得到 100 分。56 项规则检查通过。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 缩略图来自实际运行时模型，不使用与游戏内造型不符的概念图。
+- 当前穿着状态与当前预览分开标示，避免浏览另一套后沿用“已穿上”提示造成误解。
+
+### Development Action
+核对六套三维画面，修正旋转按钮遮脚、缩略图裁掉厨师帽、小屏底部提示重叠，检查 1440、1366 与 390 像素宽度。验证模型载入失败后可重试，快速选择的旧请求不会覆盖新选择。同步首页实景、素材来源、工作简报和 README。
+
+### Files / Mechanics Changed
+外观目录、模型装配、衣柜与主界面；两份新增附件 GLB、六张实际模型卡片图、衣柜实景、样式、网站三页、来源文档、测试和开发日志。
+
+### Immediate Result
+本地完整通关和重点界面检查无脚本错误或资源失败；故障测试中的模型请求失败为主动模拟，随后成功重试。实体手柄仍未实测。新增螃蟹和厨师模型各约 3.5 MB、2.6 MB，按需载入，三套配件改装共用原模型；未新增依赖。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+学生尚未反馈本轮外观。继续完成公开发布并检查；之后等待学生体验六套造型、菜单选择和手柄旋转。
