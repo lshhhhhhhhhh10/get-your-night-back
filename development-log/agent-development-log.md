@@ -150,3 +150,75 @@ GitHub Pages 状态 built，HTTPS 已启用，首页和游戏脚本均 HTTP 200�
 
 ### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
 开发与上线已完成。等待学生打开成品试玩，对操作、视觉听觉和总时长提出反馈；没有把尚未收到的评价写成学生认可。学生尚未要求阶段反思，因此未代写 Reflection 或 Required Student Reflection。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 05 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 学生首次试玩后的交互重构
+**Current Goal:** 主菜单、续玩、连续移动、附件角色、第一人称与小地图
+**Git Tag / Commit:** 基于 v0.1.1 / a486d29，改动将保存为 v0.2.0
+
+### Student Prompt
+学生实玩后指出：左侧界面不像游戏菜单，要求 Start、独立设置、弹出的关卡地图选择；Start 首次从第一关开始，否则续玩。WASD 卡顿，需要连续丝滑操控。提供 peak-characters.zip 授权使用角色模型；要求初始全景，行动时切第一人称，左上小地图可点击切第三人称全景。
+
+### Agent Response Summary
+认可实际问题来源：上一版 AI 为拉长体验而添加的 0.85 秒步间停顿不适合作为普通移动。删除该停顿，改用连续位置、逐帧速度、圆形身体碰撞和贴墙滑动；危险地板仍保留原有落脚操作。使用 localStorage 保存进度和设置。按学生新指令替换原第三人称基线。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 第一人称采用 WASD 相对视线移动、鼠标转头；M 是点击小地图的快捷键，Tab 释放鼠标以点击界面。手动选择全景后保留，直到再次切回。
+- 保存位置、门状态、搜索、设备、父母状态与操作进度；通关后 Start 进入下一关，失败后 Start 重试当前关。保存在同一浏览器，不引入账号。
+- 设置拆成总音量、环境音、动作提示音、鼠标灵敏度；镜头起伏默认关闭，避免摇晃影响判断。
+- 附件包含三个未绑定、无动画角色。选择第三个角色，保留网格与贴图，修复路径、减小部分高面数围巾、添加基础骨骼并导出 GLB。没有把附件说成官方授权素材；来源记录为学生提供。
+
+### Development Action
+检查 ZIP 与内层 RAR 内容；用 Blender 禁止自动执行脚本后读取模型，完成贴图和骨骼转换。建立连续移动与存档代码，重做菜单、关卡弹层和设置，加入第一人称、小地图与全景切换，第一人称补齐墙体高度和天花板。
+
+### Files / Mechanics Changed
+source/engine.js、source/main.js、source/persistence.js、source/tests/engine.test.js、game.html、assets/style.css、assets/models/、构建产物、本日志。
+
+### Website Update
+游戏页已重构；说明页面与 README 将在本轮验证结束后同步，避免把验证中功能写成已完成结果。
+
+### Immediate Result
+19 项规则检查已通过。第一轮浏览器测试已验证：约 60Hz 按住移动时，稳定每帧位移约 0.0336–0.0344，无原来的每格停顿；菜单、设置、地图弹层、角色载入和刷新恢复位置可用。发现返回主菜单后的刷新会把存档视角覆盖为全景，已修正，正在重新检查鼠标和完整游戏流程。
+
+Blender 在受限环境首次启动退出，正常本地权限下可读取。模型存在空材质槽与旧贴图路径，已处理；导出提示部分贴图变换不支持，预览显示人物主贴图正常，仍需检查游戏内实际姿态。
+
+### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
+学生已明确要求上述改动并提供模型；新版尚未交付其试玩，不预设其满意或认可。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 06 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 新操作完整流程验证与网站同步
+**Current Goal:** 确认连续移动与第一人称没有破坏三关核心规则
+**Git Tag / Commit:** v0.2.0
+
+### Student Prompt
+延续本次请求：先改好菜单、续玩、操控、附件模型与视角，并自行测试。
+
+### Agent Response Summary
+完成真实浏览器按键通关测试，修复返回主菜单覆盖续玩视角的问题；补充存储不可用、损坏存档和设置范围检查。同步首页画面、过程页、简报修订、README 与模型来源。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 损坏存档回退到第一关；浏览器拒绝存储时仍可运行，但无法保留进度。
+- 继续沿用原有返程安全区条件；没有为通过自动检查而扩大成功区域。
+
+### Development Action
+22 项规则与存储检查通过。Chrome 实际输入完成三关，分别约 26.9、39.4、52.5 秒游戏时间；这些是已知路线的自动操作，不能作为真实玩家平均时长。验证开门中途刷新恢复、设备返程、危险落脚、家具躲藏、花瓶接住、鼠标转头、小地图切换与音量保存。三关过程中无 JavaScript 错误。
+
+### Files / Mechanics Changed
+source/persistence.js、source/tests/persistence.test.js、assets/style.css、assets/models/README.md、assets/game-scene.png、构建资源、README.md、brief.md、index.html、process.html、开发日志。
+
+### Website Update
+首页使用新版角色实景，补充连续移动与视角说明；过程页记录学生已实际试玩并提出问题，明确撤销 AI 先前的步间停顿选择。原始简报保留，新修订单独列出。
+
+### Immediate Result
+稳定连续移动采样每帧约 0.03330–0.03424 场景单位，测试末段约 60Hz，无旧版普通地板逐格停顿。刷新恢复坐标、门进度、视角与设置正确。检查 1920×1080、1366×768 和 390×844；发现窄屏地图弹层内容被裁切，补充弹层宽度约束后复查。
+
+首次完整测试错误地停在安全区边缘前就断言成功，实际仍为 playing。检查原有 z≥11 条件后修正测试路线继续走入卧室，三关成功；这次是测试目标误差，未修改游戏胜利规则。本地工作已验证，接下来发布并核对实际线上资源。
+
+### Student Follow-up (REQUIRED — do not skip)
+新版尚待学生再次体验连续移动、第一人称与菜单；没有收到新版满意度或阶段反思，不代写认可。

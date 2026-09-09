@@ -39,6 +39,7 @@ export class Game{
     this.doors=[{x:3,z:10,name:'卧室门',open:false,progress:0,band:this.preset.doorBand},{x:11,z:6,name:'旧木门',open:false,progress:0,band:[.42,.63]}];
     this.spots=this.preset.spots.map(([x,z,name],i)=>({x,z,name,searched:false,device:i===this.preset.device}));
     this.active=false;this.status='ready';this.mode=null;this.hidden=false;this.hasDevice=false;this.time=0;this.moveCooldown=0;this.noise=0;this.noiseAt={...HOME};this.noiseAge=100;this.quiet=0;this.events=[];this.toast='';this.toastLeft=0;this.history=[];this.vase='stable';this.nextVisit=level===2?32:Infinity;this.visits=0;this.speed=.5;this.pointer=.5;this.lastSnore=-9;this.lastFoot=0;this.lastDoorSound=0;this.lastSeen=0;this.aim=null;this.inspectionTarget={x:3,z:9};this.safeSteps=0;
+    this.velocity={x:0,z:0};this.walked=0;this.footTile=`${HOME.x},${HOME.z}`;this.stepTransit=null;
   }
   start(){this.status='playing';this.active=true;this.say('先沿地板走到卧室门前。靠近后按 E。','hint');}
   say(text,type='info'){this.toast=text;this.toastLeft=5;this.events.push({type,text,time:this.time});if(type!=='snore'&&type!=='hint'){this.history.push({text,time:this.time});if(this.history.length>12)this.history.shift();}}
@@ -54,18 +55,39 @@ export class Game{
   doorNear(){return this.doors.find(d=>!d.open&&distance(d,this.player)<1.2);}
   coverNear(){return COVERS.find(c=>distance(c,this.player)<1.5);}
   spotNear(){return this.spots.find(s=>distance(s,this.player)<1.2&&!s.searched);}
-  move(dx,dz){
-    if(!this.active||this.status!=='playing'||this.mode||this.moveCooldown>0||this.hidden)return false;
-    const p={x:this.player.x+dx,z:this.player.z+dz};this.player.heading=Math.atan2(dx,dz);
-    if(playerBlocked(p.x,p.z,this.level))return false;
-    const door=this.doors.find(d=>d.x===p.x&&d.z===p.z&&!d.open);
-    if(door){this.say('这扇门还关着。按 E 试着推开。','hint');this.moveCooldown=.2;return false;}
-    if(this.preset.creaks.some(([x,z])=>x===p.x&&z===p.z)){
-      this.mode={type:'step',target:p,elapsed:0};this.say('木板有点松。指针进入亮区时，按空格落脚。','hint');return false;
-    }
-    this.land(p,3);return true;
+  canOccupy(x,z){
+    const radius=.20;
+    for(let iz=Math.floor(z-1);iz<=Math.ceil(z+1);iz++)for(let ix=Math.floor(x-1);ix<=Math.ceil(x+1);ix++){
+      const closedDoor=this.doors.some(d=>!d.open&&d.x===ix&&d.z===iz);
+      if(!playerBlocked(ix,iz,this.level)&&!closedDoor)continue;
+      // 圆形身体与墙体碰撞，分轴滑动；不靠每格停顿防止穿墙。
+      const nx=clamp(x,ix-.49,ix+.49),nz=clamp(z,iz-.49,iz+.49);
+      if(Math.hypot(x-nx,z-nz)<radius)return false;
+    }return true;
   }
-  land(p,noise){this.player.x=p.x;this.player.z=p.z;this.moveCooldown=.85;this.makeNoise(noise,noise>12?'吱呀——这块木板响了。':'轻轻落脚。');
+  move(dx,dz,dt=1/60){
+    if(!this.active||this.status!=='playing'||this.mode||this.hidden||this.stepTransit){this.velocity={x:0,z:0};return false;}
+    dt=clamp(dt,0,.06);const mag=Math.hypot(dx,dz),speed=2.05,k=1-Math.exp(-(mag?24:36)*dt);
+    this.velocity.x+=((mag?dx/mag*speed:0)-this.velocity.x)*k;
+    this.velocity.z+=((mag?dz/mag*speed:0)-this.velocity.z)*k;
+    if(Math.hypot(this.velocity.x,this.velocity.z)<.005){this.velocity={x:0,z:0};return false;}
+    const p={x:this.player.x,z:this.player.z};
+    if(this.canOccupy(p.x+this.velocity.x*dt,p.z))p.x+=this.velocity.x*dt;else this.velocity.x=0;
+    if(this.canOccupy(p.x,p.z+this.velocity.z*dt))p.z+=this.velocity.z*dt;else this.velocity.z=0;
+    const tile=`${Math.round(p.x)},${Math.round(p.z)}`;
+    if(tile!==this.footTile&&this.preset.creaks.some(([x,z])=>x===Math.round(p.x)&&z===Math.round(p.z))){
+      const length=Math.hypot(dx,dz)||1,target={x:p.x+dx/length*.34,z:p.z+dz/length*.34};
+      if(!this.canOccupy(target.x,target.z)){target.x=p.x;target.z=p.z;}
+      this.mode={type:'step',target,tile,elapsed:0,continuous:true};this.velocity={x:0,z:0};
+      this.say('脚下是松动木板。亮区内按空格，轻轻落下；Esc 可以退开。','hint');return false;
+    }
+    const traveled=distance(p,this.player);this.player.x=p.x;this.player.z=p.z;this.footTile=tile;this.walked+=traveled;
+    if(traveled>.00001)this.player.heading=Math.atan2(dx||this.velocity.x,dz||this.velocity.z);
+    if(this.walked>=.72){this.walked%=.72;this.makeNoise(3,'轻轻落脚。');}
+    this.checkSpatialEvents();return traveled>0;
+  }
+  land(p,noise){this.player.x=p.x;this.player.z=p.z;this.footTile=`${Math.round(p.x)},${Math.round(p.z)}`;this.makeNoise(noise,noise>12?'吱呀——这块木板响了。':'轻轻落脚。');this.checkSpatialEvents();}
+  checkSpatialEvents(){
     if(this.level===2&&this.vase==='stable'&&distance(this.player,{x:9,z:2.8})<1.35){this.vase='wobbling';this.mode={type:'catch',elapsed:0,remaining:4.5};this.say('袖子擦到花瓶了！亮区内按空格接住，或按 Esc 放弃。','warning');this.emit('wobble',35);}
     this.checkWin();
   }
@@ -81,7 +103,10 @@ export class Game{
     const m=this.mode;if(m.type!=='step'&&m.type!=='catch')return;
     const success=Math.abs(this.pointer-.5)<=this.preset.width/2;
     if(m.type==='step'){
-      this.mode=null;this.land(m.target,success?5:50);if(success){this.safeSteps++;this.say('稳稳落下。再听听卧室里有没有变化。','good');}
+      this.mode=null;
+      if(m.continuous){this.stepTransit={from:{x:this.player.x,z:this.player.z},target:m.target,elapsed:0};this.footTile=m.tile;this.makeNoise(success?5:50,success?'轻轻落脚。':'吱呀——这块木板响了。');}
+      else this.land(m.target,success?5:50);
+      if(success){this.safeSteps++;this.say('稳稳落下。再听听卧室里有没有变化。','good');}
     }else{this.vase=success?'caught':'fallen';this.mode=null;if(success){this.say('接住了。花瓶还好，你也是。','good');this.emit('catch',15);}else{this.makeNoise(90,'哐当！花瓶落地。先找掩体，仍有机会。');this.emit('crash',80);}}
   }
   hide(){if(!this.active||this.mode)return;if(this.hidden){this.hidden=false;this.say('离开掩体。先确认脚步已经远去。','hint');return;}
@@ -102,6 +127,7 @@ export class Game{
   tick(dt,input={}){
     if(!this.active||this.status!=='playing')return;
     dt=Math.min(dt,.06);this.time+=dt;this.moveCooldown=Math.max(0,this.moveCooldown-dt);this.noiseAge+=dt;this.quiet+=dt;this.toastLeft-=dt;
+    if(this.stepTransit){const s=this.stepTransit;s.elapsed+=dt;const t=clamp(s.elapsed/.25,0,1),u=t*t*(3-2*t);this.player.x=s.from.x+(s.target.x-s.from.x)*u;this.player.z=s.from.z+(s.target.z-s.from.z)*u;if(t===1){this.stepTransit=null;this.checkSpatialEvents();}}
     this.pointer=.5+.48*Math.sin(this.time*3.8);const p=this.parent;
     if(this.quiet>3)p.a=Math.max(0,p.a-dt*2.1);
     if(p.state==='sleep'&&p.a>=30){p.state='alert';this.say('鼾声停了。父母翻了个身，先别急。','warning');this.emit('bed',35,7,6);}
@@ -129,5 +155,23 @@ export class Game{
       if(m.type==='search'&&m.elapsed>=6){m.spot.searched=true;this.mode=null;if(m.spot.device){this.hasDevice=true;this.say('找到了！带着设备回卧室，才算成功。','good');this.emit('found',45);}else this.say('这里没有设备，换个藏点看看。','info');}
       if(m.type==='catch'){m.remaining-=dt;if(m.remaining<=0)this.cancel();}
     }
+  }
+  serialize(){
+    const fields=['level','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','speed','pointer','lastSnore','lastFoot','lastDoorSound','inspectionTarget','safeSteps','walked','footTile','stepTransit','status'];
+    const data=Object.fromEntries(fields.map(k=>[k,structuredClone(this[k])]));
+    data.nextVisit=Number.isFinite(this.nextVisit)?this.nextVisit:null;
+    data.doors=this.doors.map(d=>({open:d.open,progress:d.progress}));data.searched=this.spots.map(s=>s.searched);
+    data.mode=this.mode?{type:this.mode.type,elapsed:this.mode.elapsed,remaining:this.mode.remaining,target:this.mode.target,tile:this.mode.tile,continuous:this.mode.continuous,doorIndex:this.doors.indexOf(this.mode.door),spotIndex:this.spots.indexOf(this.mode.spot)}:null;
+    return data;
+  }
+  restore(data){
+    if(!data||!Number.isInteger(data.level)||!PRESETS[data.level]||!Number.isFinite(data.player?.x)||!Number.isFinite(data.player?.z)||!Number.isFinite(data.time)||data.time<0||!Array.isArray(data.doors)||!data.parent||!Array.isArray(data.parent.route)||!Number.isFinite(data.parent.x)||!Number.isFinite(data.parent.z)||!Number.isFinite(data.parent.a))return false;
+    this.reset(data.level);
+    const allowed=['player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','speed','pointer','lastSnore','lastFoot','lastDoorSound','inspectionTarget','safeSteps','walked','footTile','stepTransit'];
+    for(const k of allowed)if(data[k]!==undefined)this[k]=structuredClone(data[k]);
+    this.nextVisit=data.nextVisit===null?Infinity:data.nextVisit;this.doors.forEach((d,i)=>Object.assign(d,data.doors[i]||{}));this.spots.forEach((s,i)=>s.searched=Boolean(data.searched?.[i]));
+    if(!this.canOccupy(this.player.x,this.player.z)){this.reset(data.level);return false;}
+    if(data.mode){this.mode={...data.mode};if(this.mode.type==='door')this.mode.door=this.doors[this.mode.doorIndex];if(this.mode.type==='search')this.mode.spot=this.spots[this.mode.spotIndex];if(this.mode.type==='door'&&!this.mode.door||this.mode.type==='search'&&!this.mode.spot)this.mode=null;}
+    this.status='playing';this.active=false;this.velocity={x:0,z:0};return true;
   }
 }

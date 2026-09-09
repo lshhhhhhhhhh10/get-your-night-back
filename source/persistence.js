@@ -1,0 +1,8 @@
+export const SAVE_KEY='night-back:save:v2';
+export const SETTINGS_KEY='night-back:settings:v2';
+export const DEFAULT_SETTINGS={master:.7,effects:.7,ambience:.2,sensitivity:1,headBob:false};
+export function readJSON(storage,key){try{return JSON.parse(storage.getItem(key)||'null');}catch{return null;}}
+export function writeJSON(storage,key,value){try{storage.setItem(key,JSON.stringify(value));return true;}catch{return false;}}
+export function readSettings(storage){const raw=readJSON(storage,SETTINGS_KEY)||{},result={...DEFAULT_SETTINGS};for(const k of ['master','effects','ambience'])if(Number.isFinite(raw[k]))result[k]=Math.max(0,Math.min(1,raw[k]));if(Number.isFinite(raw.sensitivity))result.sensitivity=Math.max(.3,Math.min(2,raw.sensitivity));result.headBob=raw.headBob===true;return result;}
+export function saveSession(storage,game,view){return writeJSON(storage,SAVE_KEY,{version:2,updatedAt:Date.now(),game:game.serialize(),view:{yaw:view.yaw,pitch:view.pitch,mode:view.mode,hasMoved:view.hasMoved}});}
+export function readSession(storage){const value=readJSON(storage,SAVE_KEY),g=value?.game;if(value?.version!==2||!g||!Number.isInteger(g.level)||g.level<0||g.level>2||!['playing','won','lost'].includes(g.status)||!Number.isFinite(g.time)||g.time<0)return null;return value;}
