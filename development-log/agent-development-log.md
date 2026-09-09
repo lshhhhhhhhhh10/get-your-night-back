@@ -486,3 +486,32 @@ source/layout.js、source/furniture.js、source/engine.js、source/main.js、sou
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 未收到学生对本轮完成版本的实际反馈。接下来按已授权范围发布并核对线上结果，等待学生再次试玩；不代写满意度或阶段反思。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 15 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 住宅与巡查新版上线
+**Current Goal:** 确认原网址已提供可玩的修复版本
+**Git Tag / Commit:** 游戏 v0.4.0 / de54cf6；发布记录 v0.4.1
+
+### Student Prompt
+延续本轮场景、菜单与巡查修正，更新原公开游戏。
+
+### Agent Response Summary
+GitHub Pages 已成功发布 de54cf6。在公开地址复测第一关完整取物返程，确认夜行主题菜单、两扇门、松动地板声音、蹲行和搜索正常；重新查看家长起身的第一人称画面。首页与制作过程页的跳转及新阶段记录正常。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+实际公开版本浏览器验证完成，无资源请求失败或 JavaScript 错误。同步过程页的上线状态。
+
+### Files / Mechanics Changed
+process.html、development-log/agent-development-log.md；仅记录发布结果，游戏代码保持 v0.4.0。
+
+### Immediate Result
+https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.4.0 已更新。三关本地实玩和正式网址关键复查均完成。旧进度保留所在关卡并按新家具布置重开；设置保留。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+等待学生实玩本版，判断菜单风格、住宅通行和家长巡查是否符合预期。尚未收到本版反馈，不代写学生认可或反思。
