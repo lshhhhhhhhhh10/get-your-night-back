@@ -222,3 +222,35 @@ source/persistence.js、source/tests/persistence.test.js、assets/style.css、as
 
 ### Student Follow-up (REQUIRED — do not skip)
 新版尚待学生再次体验连续移动、第一人称与菜单；没有收到新版满意度或阶段反思，不代写认可。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 07 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 发布与线上复核
+**Current Goal:** 使原来的公开网址提供新版并确认实际可玩
+**Git Tag / Commit:** 游戏 v0.2.0 / 1891a62；发布记录 v0.2.1
+
+### Student Prompt
+延续已授权的游戏修改和上线，在原公开项目中交付本次改动。
+
+### Agent Response Summary
+将新版推送至原仓库，GitHub Pages 报告 built，提交与本地一致。随后在公开地址进行真实浏览器验证，而不是仅检查本地副本。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+线上第一关真实按键搜索返程成功，含开门中途刷新恢复。另一组线上测试确认角色加载、连续移动、第一人称与全景切换、鼠标指针锁定和转头、音量设置保存、原位置和视角续玩。选择第三张地图后开局为第三关，回到菜单并刷新后 Start 继续第三关。首页至过程页跳转和四条时间线显示正确。
+
+### Files / Mechanics Changed
+process.html、development-log/agent-development-log.md；发布记录补充，不再修改已测试游戏源码。
+
+### Website Update
+过程页标记新版已上线并列出线上验证范围。
+
+### Immediate Result
+线上资源与角色正常加载，无资源请求失败或 JavaScript 错误。网址保持 https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html 。续玩依赖当前浏览器存储；旧版没有存档，新版第一次打开会从第一关开始。
+
+### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
+本次要求已交付，等待学生再次试玩后评价菜单、连续移动手感、附件角色和视角；尚未收到新版反馈，不代写学生认可或反思。
