@@ -1,16 +1,18 @@
+import {furnitureFor,OPENINGS,PARENT_BED} from './layout.js';
+import {createFurniture} from './furniture.js';
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone as cloneRig} from 'three/addons/utils/SkeletonUtils.js';
 import {readSettings,readSession,saveSession,writeJSON,SETTINGS_KEY} from './persistence.js';
 import {Soundscape} from './audio.js';
-import {Game,PRESETS,COVERS,HOME,MAP_DEPTH,mapWidth,MINIMAP_RADIUS,RECOGNITION_TIME,wall,occluded,distance,clamp} from './engine.js';
+import {Game,PRESETS,HOME,MAP_DEPTH,mapWidth,MINIMAP_RADIUS,RECOGNITION_TIME,wall,occluded,distance,clamp} from './engine.js';
 
 const $=s=>document.querySelector(s),canvas=$('#world');
 const game=new Game(0),keys=new Set();
 let storage;try{storage=window.localStorage;}catch{storage={getItem:()=>null,setItem:()=>{throw Error('unavailable')}};}
 const settings=readSettings(storage);
 const view={mode:'overview',hasMoved:false,yaw:0,pitch:-.10};
-let assetTemplate,wallMeshes=[],worldLabels=[],ceiling,sceneReady=false;
+let assetTemplate,wallMeshes=[],openingMeshes=[],worldLabels=[],ceiling,sceneReady=false;
 let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){$('#loading').innerHTML='浏览器无法启动 3D。请使用开启硬件加速的 Chrome、Edge 或 Safari。';throw e;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.28;
@@ -24,9 +26,6 @@ function box(w,h,d,c,x,y,z,parent=house){const mesh=new THREE.Mesh(new THREE.Box
 function ball(r,c,x,y,z,parent=house,scale=[1,1,1]){const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,12,8),mat(c));mesh.position.set(x,y,z);mesh.scale.set(...scale);mesh.castShadow=true;parent.add(mesh);return mesh;}
 function cyl(rt,rb,h,c,x,y,z,parent=house,n=12){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,n),mat(c));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 function label(text,x,y,z,color='#c8d6ee',size=.7){const c=document.createElement('canvas');c.width=512;c.height=96;const ctx=c.getContext('2d');ctx.font='500 38px sans-serif';ctx.textAlign='center';ctx.fillStyle=color;ctx.fillText(text,256,59);const t=new THREE.CanvasTexture(c);const m=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:true}));m.scale.set(size*3,size*.56,1);m.position.set(x,y,z);house.add(m);worldLabels.push(m);return m;}
-function lamp(x,z,warm=true){cyl(.18,.23,.12,'#393446',x,.08,z);cyl(.027,.027,1.7,'#94775f',x,.95,z);cyl(.23,.42,.46,warm?'#f4cf86':'#9fbdd6',x,1.7,z);const l=new THREE.PointLight(warm?0xffc476:0xb1d4ff,5.5,6,2);l.position.set(x,1.55,z);house.add(l);}
-function plant(x,z){cyl(.21,.16,.4,'#b68169',x,.22,z);for(let i=0;i<5;i++){const a=i*1.256;const b=ball(.32,i%2?'#487c76':'#65978b',x+Math.sin(a)*.20,.6+(i%2)*.13,z+Math.cos(a)*.2,house,[.5,1.7,.7]);b.rotation.z=Math.sin(a)*.45;}}
-function cabinet(x,z,name,wide=1){const g=new THREE.Group();g.position.set(x,0,z);house.add(g);box(wide,.76,.65,'#765653',0,.5,0,g);box(wide+.08,.1,.75,'#bc9577',0,.92,0,g);for(const xx of[-wide*.28,wide*.28]){box(.055,.52,.05,'#d7b38a',xx,.49,.34,g);box(.09,.05,.04,'#e8ce91',xx,.55,.38,g);}for(const xx of[-wide*.36,wide*.36])for(const zz of[-.22,.22])box(.07,.16,.07,'#363345',xx,.08,zz,g);return g;}
 function createPlayer(parent=false){
   const g=new THREE.Group(),body=new THREE.Group();g.add(body);
   const asset=cloneRig(assetTemplate);body.add(asset);const bones={};
@@ -38,17 +37,17 @@ function createPlayer(parent=false){
   g.userData={body,asset,bones,role:parent?'parent':'player'};house.add(g);return g;
 }
 function buildHouse(){
-  scene.remove(house);house.traverse(o=>{if(!o.isSkinnedMesh)o.geometry?.dispose();if(o.isSprite)o.material?.map?.dispose();for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.parentOwned)m.dispose();});house=new THREE.Group();scene.add(house);doorMeshes=[];spotMeshes=[];wallMeshes=[];worldLabels=[];
+  scene.remove(house);house.traverse(o=>{if(!o.isSkinnedMesh)o.geometry?.dispose();if(o.isSprite)o.material?.map?.dispose();for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.parentOwned)m.dispose();});house=new THREE.Group();scene.add(house);doorMeshes=[];spotMeshes=[];wallMeshes=[];openingMeshes=[];worldLabels=[];
   const maxX=mapWidth(game.level)-1,center=maxX/2,depth=MAP_DEPTH,cz=(depth-1)/2;
   box(maxX+1,.45,15,'#29374b',center,-.31,7);box(maxX+1.25,.16,15.25,'#40526a',center,-.6,7);
   box(maxX-9,.45,4,'#29374b',(maxX+10)/2,-.31,16.5);box(maxX-8.75,.16,4.25,'#40526a',(maxX+10)/2,-.6,16.5);
-  ceiling=box(maxX+1,.08,depth,'#556279',center,2.58,cz);ceiling.visible=false;ceiling.castShadow=false;
+  ceiling=box(maxX+1,.08,depth,'#556279',center,2.64,cz);ceiling.visible=false;ceiling.castShadow=false;
   const floors=new Map();const floorBox=(w,h,d,c,x,y,z)=>{if(!floors.has(c))floors.set(c,[]);floors.get(c).push([w,h,d,x,y,z]);};
   for(let z=0;z<depth;z++)for(let x=0;x<=maxX;x++){
     if(z>14&&x<10)continue;
     if(wall(x,z,game.level)){
       const h=z===0||x===0||((x===5||z===4)&&z<9&&x<10)?2.25:.72;
-      const mesh=box(.99,2.5,.99,'#465369',x,1.20,z),cap=box(1.01,.07,1.01,'#6b788e',x,2.46,z);wallMeshes.push({mesh,cap,height:h});
+      const mesh=box(1.005,2.6,1.005,'#465369',x,1.3,z),cap=box(1.015,.045,1.015,'#6b788e',x,2.585,z);wallMeshes.push({mesh,cap,height:h});
     }else{
       const bedroom=z>=11&&x<7,parents=x>5&&x<9&&z>4&&z<8;const creak=game.preset.creaks.some(([a,b])=>a===x&&b===z);
       const c=creak?'#b78662':x>18&&z<7?'#8daaa3':x>=15&&z<7?'#657c98':x>=15&&z<14?'#938087':z>=14?'#778d9a':bedroom?'#788399':parents?'#615967':z<=3?'#79867f':(x+z)%2?'#7c6d68':'#8b7970';
@@ -58,36 +57,38 @@ function buildHouse(){
     }
   }
   for(const[color,items]of floors){const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),mat(color),items.length),m=new THREE.Matrix4();items.forEach(([w,h,d,x,y,z],i)=>{m.makeScale(w,h,d);m.setPosition(x,y,z);mesh.setMatrixAt(i,m);});mesh.receiveShadow=true;house.add(mesh);}
-  // 墙体采用可读的剖面；父母和藏点仍受真正的遮挡判定约束。
-  for(const d of game.doors){if(wall(d.x,d.z,game.level))continue;const pivot=new THREE.Group();pivot.position.set(d.x-.47,0,d.z);house.add(pivot);box(.94,1.65,.12,d.x===3?'#bf9475':'#897261',.47,.84,0,pivot);box(.72,1.1,.04,'#8f725e',.47,.92,.07,pivot);ball(.055,'#edca7b',.79,.85,.12,pivot);for(const xx of[-.53,.53])box(.08,1.83,.2,'#d0ac86',d.x+xx,.9,d.z);box(1.16,.10,.2,'#d0ac86',d.x,1.81,d.z);doorMeshes.push({d,pivot});}
-  box(1.4,.36,2,'#66546b',1.7,.27,12);box(1.32,.26,1.92,'#b1bdd1',1.7,.57,12);box(1.3,.14,1.23,'#667d9d',1.7,.77,12.3);box(1.14,.18,.44,'#e0d7cc',1.7,.79,11.32);box(1.46,1,.12,'#8b716a',1.7,.6,10.95);lamp(4.8,12.9);box(1.4,.04,1.9,'#c2a383',3.7,.03,12);
-  const bedsideGlow=new THREE.PointLight(0xffb95e,20,6,1.8);bedsideGlow.position.set(3.5,2,11.8);house.add(bedsideGlow);
+  // 门洞有侧壁、完整过梁，第一人称墙顶与天花板严密相接。
+  for(const[x,z,axis]of OPENINGS){if(wall(x,z,game.level))continue;
+    const opening=new THREE.Group();opening.position.set(x,0,z);opening.rotation.y=axis==='z'?Math.PI/2:0;house.add(opening);opening.visible=false;openingMeshes.push(opening);
+    box(1,.35,1.005,'#465369',0,2.425,0,opening);
+    for(const xx of[-.48,.48])box(.04,2.25,1.03,'#b7a38f',xx,1.125,0,opening);
+    box(1.06,.09,1.04,'#c6b29a',0,2.245,0,opening);
+  }
+  for(const d of game.doors){const pivot=new THREE.Group();pivot.position.set(d.x-.47,0,d.z);house.add(pivot);
+    box(.94,2.16,.12,d.x===3?'#ba9479':'#958474',.47,1.08,0,pivot);
+    for(const y of[.58,1.55])for(const side of[-1,1])box(.73,.76,.022,'#aa8b73',.47,y,side*.07,pivot);
+    for(const side of[-1,1]){ball(.045,'#edca7b',.81,1.03,side*.11,pivot);box(.09,.18,.016,'#786657',.81,1.03,side*.077,pivot);}
+    doorMeshes.push({d,pivot});
+  }
+  const furniture=new Map();for(const f of furnitureFor(game.level)){const mesh=createFurniture(f);house.add(mesh);furniture.set(f.id,mesh);}
+  for(const s of game.spots){const mesh=furniture.get(s.id),f=furnitureFor(game.level).find(f=>f.id===s.id);const marker=label('E · 搜索',s.x,f.h+.38,s.z,'#f5d899',.48);marker.visible=false;spotMeshes.push({s,mesh,marker});}
+  // 薄地毯没有阻挡体积；居住用途通过成组家具、挂画和灯光表达。
+  box(1.3,.018,1.8,'#b6a086',3.65,.026,12.15);box(2.2,.018,2.6,'#5e7d82',2.6,.026,2.8);
+  const bedsideGlow=new THREE.PointLight(0xffb95e,14,6,1.8);bedsideGlow.position.set(3.5,2,11.8);house.add(bedsideGlow);
   const seam=box(.82,.015,.04,'#ffd994',3,.06,9.92);seam.material=new THREE.MeshStandardMaterial({color:0xffca79,emissive:0xffb550,emissiveIntensity:2});
   const doorGlow=new THREE.PointLight(0xffb955,5,3,1.5);doorGlow.position.set(3,.18,9.75);house.add(doorGlow);
-  box(1.65,.45,2.0,'#674e65',7,.29,5.8);box(1.6,.18,1.9,'#a69da6',7,.62,5.8);box(1.58,.2,1.2,'#867a99',7,.81,6.1);box(1.2,.15,.4,'#d4c6be',7,.81,5.1);label('父母房间',7,2.65,5.4,'#aab5ce',.66);
-  label('你的卧室',3.7,.16,13.3,'#f6d6a4',.65).material.depthTest=false;
-  for(const c of COVERS){if(wall(c.x,c.z,game.level))continue;
-    if(c.name==='沙发'){box(.82,.38,.85,'#587f80',c.x,.34,c.z);box(.9,1.05,.22,'#678e8b',c.x,.65,c.z-.34);for(const s of[-1,1])box(.18,.66,.84,'#4b7175',c.x+s*.4,.39,c.z);box(.58,.14,.54,'#80a5a0',c.x,.61,c.z+.06);}
-    else if(c.name==='高背扶手椅'){box(.9,1.12,.24,'#8b6870',c.x,.6,c.z-.3);box(.7,.48,.78,'#a57c7d',c.x,.3,c.z);for(const s of[-1,1])box(.15,.73,.8,'#7e5f6b',c.x+s*.4,.43,c.z);box(.5,.19,.42,'#d4a181',c.x,.61,c.z);}
-    else{box(.88,1.75,.8,'#746e6c',c.x,.9,c.z);for(let y=.3;y<1.7;y+=.38){box(.8,.05,.86,'#b79c7c',c.x,y,c.z);for(let i=0;i<3;i++)box(.12,.25,.32,['#bd9168','#719995','#a7a0b4'][i],c.x-.25+i*.21,y+.15,c.z+.2);}}
+  for(const x of[3,11,...(game.level>0?[21]:[])]){
+    box(2.2,1.15,.045,'#273d59',x,1.58,.515);
+    for(const dx of[-1.13,0,1.13])box(.065,1.27,.10,'#a4b4c4',x+dx,1.58,.55);
+    for(const y of[.96,2.20])box(2.33,.075,.15,'#c0c7c7',x,y,.56);
+    box(2.42,.075,.28,'#afb7bf',x,.93,.62);box(1.02,.015,.018,'#718caa',x-.56,1.86,.544);
+    const light=new THREE.PointLight(0xb9deff,3.6,5);light.position.set(x,1.8,1);house.add(light);
   }
-  for(const s of game.spots){const mesh=cabinet(s.x,s.z,s.name,1.0);const marker=label('E · 搜索',s.x,1.45,s.z,'#f5d899',.48);marker.visible=false;spotMeshes.push({s,mesh,marker});}
-  for(const x of[3,11]){if(game.level===0&&x>9)continue;box(2.4,1.25,.10,'#91b4c7',x,1.3,.48);for(const dx of[-1.25,0,1.25])box(.09,1.4,.18,'#b0bac6',x+dx,1.3,.54);box(2.65,.1,.4,'#9198a9',x,.62,.52);box(2.65,.1,.2,'#afb7c2',x,1.99,.54);const light=new THREE.PointLight(0xb9deff,4,6);light.position.set(x,1.8,1);house.add(light);}
-  plant(1,1);plant(8,1);if(game.level>0)plant(13,3);lamp(4,1);box(2.0,.035,1.4,'#64777b',5.5,.04,2);box(.8,.4,.62,'#a68978',5.5,.26,2);cyl(.18,.18,.05,'#e2cf9f',5.5,.49,2);
-  const vaseStand=cabinet(9,2.8,'花瓶台',.6);vaseMesh=new THREE.Group();vaseMesh.position.set(9,.97,2.8);house.add(vaseMesh);cyl(.11,.2,.32,'#adbdc6',0,.16,0,vaseMesh);cyl(.09,.12,.16,'#bccdd1',0,.4,0,vaseMesh);ball(.14,'#769083',0,.69,0,vaseMesh,[.5,1.7,.5]);vaseMesh.visible=game.level===2;
-  // 东侧房间以家具、地面颜色和门口标识提供方向线索。
-  box(1.4,.1,.8,'#ae8a65',16,.85,5);for(const x of[15.4,16.6])box(.1,.83,.65,'#715968',x,.42,5);
-  box(.45,.05,.38,'#d3c7a6',15.7,.93,4.9);box(.42,.26,.15,'#587878',16.35,1.01,5);lamp(17,1.3,false);
-  label('书房',16,2.05,3.1,'#c0d8f7',.6);label('储物间',16,2.05,11.8,'#e5c1b2',.6);
-  cabinet(16,12,'纸箱柜');box(.62,.55,.65,'#b89a7f',16,1.25,12);box(.46,.43,.5,'#d0b597',16,1.73,12);
-  if(game.level>0){
-    for(const x of[20,21,22]){box(.9,.85,.65,'#77938a',x,.43,1);box(.95,.07,.75,'#d1c5ab',x,.89,1);}box(.63,.035,.42,'#66787f',21,.94,1);
-    box(1.7,.10,1.1,'#b7a17a',21.5,.84,5);for(const x of[20.8,22.2])box(.1,.82,.85,'#8b776e',x,.41,5);
-    cyl(.17,.2,.32,'#d3b9a3',21.4,1.05,5);lamp(22,8,false);label('餐厅',21,2.05,3,'#c5e2cc',.6);
-    for(const x of[12,13]){box(.82,1,.75,'#a2b0ba',x,.5,15);const drum=cyl(.27,.27,.04,'#536b7d',x,.52,15.39);drum.rotation.x=Math.PI/2;}
-    label('洗衣间',12,2.05,16.2,'#c5dce8',.6);label('后走廊',20,2.05,16,'#c1ccdf',.6);
-    cabinet(21,16,'整理台');box(.65,.45,.58,'#ac987b',21,1.2,16);
-  }
+  // 踢脚线只附着在可见墙面上，不伸入门洞。
+  for(let z=1;z<MAP_DEPTH-1;z++)for(let x=1;x<mapWidth(game.level)-1;x++)if(!wall(x,z,game.level))for(const[dx,dz]of[[1,0],[-1,0],[0,1],[0,-1]])if(wall(x+dx,z+dz,game.level))box(dx?.035:1,.11,dz?.035:1,'#88909b',x+dx*.49,.055,z+dz*.49);
+  for(const[x,z,axis]of[[2,10.51,'x'],[14.51,4.8,'z']]){const g=new THREE.Group();g.position.set(x,1.6,z);g.rotation.y=axis==='z'?Math.PI/2:0;house.add(g);box(.63,.54,.035,'#b7a185',0,0,0,g);box(.53,.44,.008,'#5b8490',0,0,.022,g);box(.29,.15,.01,'#b6b4a5',0,-.08,.029,g);}
+  vaseMesh=new THREE.Group();vaseMesh.position.set(9.7,.88,2.8);house.add(vaseMesh);cyl(.11,.2,.32,'#adbdc6',0,.16,0,vaseMesh);cyl(.09,.12,.16,'#bccdd1',0,.4,0,vaseMesh);ball(.14,'#769083',0,.69,0,vaseMesh,[.5,1.7,.5]);vaseMesh.visible=game.level===2;
+  for(const[text,x,z]of[['你的卧室',4,12],['父母房间',7,6],['客厅',3,4.1],['书房',16,3],['储物间',16,11.8],['洗衣间',12,16.2],...(game.level>0?[['餐厅',21,3],['后走廊',21,16]]:[])])label(text,x,2.72,z,'#c5d5e5',.58);
   playerMesh=createPlayer();playerMesh.position.set(game.player.x,0,game.player.z);phoneMesh=box(.15,.26,.035,'#293349',.30,.45,.20,playerMesh.userData.body);box(.11,.19,.015,'#9bcbc6',0,0,.026,phoneMesh);phoneMesh.visible=false;parentMesh=createPlayer(true);parentMesh.position.set(7,0,6);parentMesh.visible=false;
   parentLight=new THREE.SpotLight(0xffd496,16,7,Math.PI/6,.6,1.4);parentLight.castShadow=true;parentLight.shadow.mapSize.set(512,512);parentLight.shadow.normalBias=.03;parentLight.position.set(7,1.1,6);parentTarget=new THREE.Object3D();house.add(parentTarget);parentLight.target=parentTarget;house.add(parentLight);
   stepTarget=new THREE.Mesh(new THREE.RingGeometry(.30,.37,40),new THREE.MeshBasicMaterial({color:0xf4ce8a,transparent:true,opacity:.85,depthWrite:false}));stepTarget.rotation.x=-Math.PI/2;stepTarget.visible=false;house.add(stepTarget);
@@ -108,7 +109,7 @@ function setView(mode){
 function unlockMouse(){unlockUntil=performance.now()+500;if(document.pointerLockElement)document.exitPointerLock();}
 function persist(){if(game.status!=='ready'&&sceneReady){saveSession(storage,game,view);saved=readSession(storage);updateStartLabel();}}
 function updateStartLabel(){
-  const s=saved?.game;$('#continue-detail').textContent=s?s.status==='won'?`继续 · 第 ${Math.min(3,s.level+2)} 夜`:s.status==='lost'?`重试 · 第 ${s.level+1} 夜`:`继续 · 第 ${s.level+1} 夜 · ${Math.floor(s.time/60)}:${String(Math.floor(s.time%60)).padStart(2,'0')}`:'第一次来？从第一夜开始';
+  const s=saved?.game;$('#continue-detail').textContent=s?s.status==='won'?`继续 · 第 ${Math.min(3,s.level+2)} 夜`:s.status==='restart'?`布置已更新 · 重开第 ${s.level+1} 夜`:s.status==='lost'?`重试 · 第 ${s.level+1} 夜`:`继续 · 第 ${s.level+1} 夜 · ${Math.floor(s.time/60)}:${String(Math.floor(s.time%60)).padStart(2,'0')}`:'第一次来？从第一夜开始';
 }
 function hideDialogs(){for(const id of ['#result','#pause-screen','#settings-screen','#challenge-screen'])$(id).hidden=true;}
 function enterPlay(){hideDialogs();$('#start-screen').hidden=true;$('#hud').hidden=false;game.active=true;enableAudio();keys.clear();lastStatus='';lastMode='';lastToast='';updateUI();persist();}
@@ -116,7 +117,7 @@ function setupLevel(level){game.reset(level);buildHouse();view.mode='overview';v
 function startOrContinue(){
   saved=readSession(storage);const data=saved?.game;
   if(!data){setupLevel(0);return;}
-  if(data.status==='restart'){setupLevel(data.level);game.say('住宅扩建了。从你上次所在的这一夜重新探索。','hint');return;}
+  if(data.status==='restart'){setupLevel(data.level);game.say('家具布置与巡查路线更新了。从你上次所在的这一夜重新探索。','hint');return;}
   if(data.status==='won'){setupLevel(Math.min(2,data.level+1));return;}
   if(data.status==='lost'){setupLevel(data.level);return;}
   if(!game.restore(data)){setupLevel(0);return;}
@@ -135,7 +136,7 @@ function drawMap(target,level,player=null){
   if(player){ctx.beginPath();ctx.arc(w/2,h/2,MINIMAP_RADIUS*unit,0,Math.PI*2);ctx.clip();}
   const near=(x,z)=>!player||Math.hypot(x-player.x,z-player.z)<=MINIMAP_RADIUS+.7;
   for(let z=0;z<MAP_DEPTH;z++)for(let x=0;x<=maxX;x++){if(!near(x,z))continue;ctx.fillStyle=wall(x,z,level)?'#4b5c75':z>=11&&x<7?'#9f865d':x>18&&z<7?'#477568':x>=15?'#334866':'#253c53';ctx.fillRect(ox+x*unit,oz+z*unit,unit+.2,unit+.2);}
-  for(const c of COVERS){if(c.x>maxX||!near(c.x,c.z)||wall(c.x,c.z,level))continue;ctx.fillStyle='#749f96';ctx.fillRect(ox+(c.x+.15)*unit,oz+(c.z+.15)*unit,unit*.7,unit*.7);}
+  for(const c of furnitureFor(level)){if(!near(c.x,c.z))continue;ctx.save();ctx.translate(ox+(c.x+.5)*unit,oz+(c.z+.5)*unit);ctx.rotate(-(c.yaw||0));ctx.fillStyle=c.cover?'#749f96':'#687c89';ctx.fillRect(-c.w*unit/2,-c.d*unit/2,c.w*unit,c.d*unit);ctx.restore();}
   for(const[x,z]of PRESETS[level].creaks){if(!near(x,z))continue;ctx.fillStyle='#b18a5f';ctx.fillRect(ox+(x+.2)*unit,oz+(z+.2)*unit,.6*unit,.6*unit);}
   ctx.restore();
   if(player){ctx.save();ctx.translate(w/2,h/2);ctx.rotate(view.mode==='firstPerson'?view.yaw:Math.PI-player.heading);ctx.fillStyle='#fff1c9';ctx.beginPath();ctx.moveTo(0,-7);ctx.lineTo(5,5);ctx.lineTo(0,3);ctx.lineTo(-5,5);ctx.closePath();ctx.fill();ctx.restore();ctx.fillStyle='#8eabc6';ctx.font='10px sans-serif';ctx.fillText('N ↑',8,15);}
@@ -215,23 +216,24 @@ function animate(now){
   }
   if(game.status==='won')body.position.y=Math.abs(Math.sin(now*.006))*.16;phoneMesh.visible=game.hasDevice;
   const fp=view.mode==='firstPerson'&&$('#start-screen').hidden&&!['won','lost'].includes(game.status);playerMesh.visible=!fp;ring.visible=!fp;ring.position.set(game.player.x,.045,game.player.z);
-  const p=game.parent,parentMoving=['checking','returning'].includes(p.state),parentSleeping=['sleep','alert'].includes(p.state);
-  parentMesh.position.set(p.x,0,p.z);parentMesh.rotation.y=parentSleeping?0:p.heading;
+  const p=game.parent,parentMoving=['checking','returning'].includes(p.state)&&p.phase==='walk',parentSleeping=['sleep','alert'].includes(p.state);
+  const wake=p.state==='warning'?clamp((5-p.timer)/2,0,1):parentSleeping?0:1;
+  parentMesh.position.set(THREE.MathUtils.lerp(PARENT_BED.x,p.x,wake),0,THREE.MathUtils.lerp(PARENT_BED.z,p.z,wake));parentMesh.rotation.y=parentSleeping?0:p.heading;
   // 第一人称交给真实深度和墙体遮挡。脚下射线不能代表头部是否可见。
   parentMesh.visible=fp||!occluded(game.player,p,game.level,game.doors,game.hidden);
-  const pb=parentMesh.userData.body;pb.position.set(0,parentSleeping?.84:p.state==='warning'?.28:0,parentSleeping?.78:0);pb.rotation.x=parentSleeping?-Math.PI/2:0;
+  const pb=parentMesh.userData.body;pb.position.set(0,.84*(1-wake),.78*(1-wake));pb.rotation.x=-Math.PI/2*(1-wake);
   for(const[name,{bone,rest}]of Object.entries(parentMesh.userData.bones)){
     bone.quaternion.copy(rest);
     if(name==='ArmL'||name==='ArmR'){const sign=name==='ArmL'?1:-1;bone.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),-sign*.72));bone.rotateX(parentMoving?Math.sin(now*.006+(sign>0?0:Math.PI))*.25:0);}
-    if(name==='LegL'||name==='LegR')bone.rotateX(parentMoving?Math.sin(now*.006+(name==='LegL'?0:Math.PI))*.35:p.state==='warning'?-.65:0);
+    if(name==='LegL'||name==='LegR')bone.rotateX(parentMoving?Math.sin(now*.006+(name==='LegL'?0:Math.PI))*.35:p.state==='warning'?-.65*Math.sin(wake*Math.PI):0);
     if(name==='Spine'&&parentSleeping)bone.rotateX(Math.sin(now*.0015)*.018);
   }
-  parentLight.visible=parentMoving;parentLight.position.set(p.x,1.25,p.z);parentTarget.position.set(p.x+Math.sin(p.heading)*4,.05,p.z+Math.cos(p.heading)*4);
-  for(const{d,pivot}of doorMeshes)pivot.rotation.y=d.progress*Math.PI*.52;
-  for(const{s,mesh,marker}of spotMeshes){marker.visible=!s.searched&&distance(s,game.player)<2&&!occluded(game.player,s,game.level,game.doors);mesh.children[0].material=mat(s.searched?'#56606a':'#765653');}
+  parentLight.visible=['checking','returning'].includes(p.state);parentLight.position.set(p.x,1.25,p.z);parentTarget.position.set(p.x+Math.sin(p.heading)*4,.05,p.z+Math.cos(p.heading)*4);
+  for(const{d,pivot}of doorMeshes)pivot.rotation.y=d.progress*Math.PI*.49;
+  for(const{s,mesh,marker}of spotMeshes){marker.visible=!s.searched&&distance(s,game.player)<2&&!occluded(game.player,s,game.level,game.doors,true,s.id);}
   stepTarget.visible=game.mode?.type==='step';if(stepTarget.visible)stepTarget.position.set(game.mode.target.x,.045,game.mode.target.z);
-  vaseMesh.rotation.z=game.vase==='wobbling'?Math.sin(now*.023)*.32:game.vase==='fallen'?Math.PI/2:0;vaseMesh.position.y=game.vase==='fallen'?.18:.97;
-  wallBlend=THREE.MathUtils.damp(wallBlend,fp?1:0,9,dt);for(const{mesh,cap,height}of wallMeshes){const h=THREE.MathUtils.lerp(height,2.5,wallBlend);mesh.scale.y=h/2.5;mesh.position.y=h/2-.05;cap.position.y=h-.04;}ceiling.visible=fp&&wallBlend>.99;for(const l of worldLabels)if(!spotMeshes.some(s=>s.marker===l))l.visible=!fp;
+  vaseMesh.rotation.z=game.vase==='wobbling'?Math.sin(now*.023)*.32:game.vase==='fallen'?Math.PI/2:0;vaseMesh.position.y=game.vase==='fallen'?.18:.88;
+  wallBlend=THREE.MathUtils.damp(wallBlend,fp?1:0,9,dt);for(const{mesh,cap,height}of wallMeshes){const h=THREE.MathUtils.lerp(height,2.6,wallBlend);mesh.scale.y=h/2.6;mesh.position.y=h/2;cap.position.y=h-.015;}ceiling.visible=fp&&wallBlend>.99;for(const m of openingMeshes)m.visible=fp;for(const l of worldLabels)if(!spotMeshes.some(s=>s.marker===l))l.visible=!fp;
   const targetPos=new THREE.Vector3(),targetRotation=new THREE.Quaternion();
   eyeHeight=THREE.MathUtils.damp(eyeHeight,game.hidden?.85:1.37,16,dt);
   if(fp){const bob=settings.headBob&&moving?Math.sin(walkPhase)*.013:0;targetPos.set(game.player.x,eyeHeight+bob,game.player.z);targetRotation.setFromEuler(new THREE.Euler(view.pitch,-view.yaw,0,'YXZ'));}

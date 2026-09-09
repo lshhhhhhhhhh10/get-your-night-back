@@ -1,14 +1,16 @@
+import {furnitureFor,searchSpots,circleHits,doorShape,PARENT_HOME} from './layout.js';
 export const PRESETS = [
   {name:'第一声吱呀',subtitle:'从客厅找到书房',description:'穿过客厅，探索东侧书房。两个藏点，先把动作和声音联系起来。',width:.42,doorBand:[.25,.78],nightVisit:false,spots:[[3,2,'客厅矮柜'],[16,2,'书房抽屉']],creaks:[[3,9],[15,3]],device:1},
   {name:'今晚走哪边',subtitle:'近路，未必安静',description:'书房、餐厅和储物间开放，五个藏点。走旧门近路，还是绕过松动地板？',width:.30,doorBand:[.34,.70],nightVisit:false,spots:[[2,2,'窗边矮柜'],[16,2,'书房抽屉'],[21,3,'餐边柜'],[21,11,'储物柜'],[12,17,'洗衣间抽屉']],creaks:[[3,9],[3,7],[3,5],[4,3],[10,3],[15,3],[16,10],[20,12]],device:3},
   {name:'脚步近了',subtitle:'边探索，边听动静',description:'更大的住宅里父母会起夜巡视。蹲行绕过视线，听脚步判断何时搜索。',width:.30,doorBand:[.34,.70],nightVisit:true,spots:[[2,2,'窗边矮柜'],[16,2,'书房抽屉'],[21,3,'餐边柜'],[21,11,'储物柜'],[12,17,'洗衣间抽屉']],creaks:[[3,9],[3,5],[4,3],[10,3],[15,3],[16,10],[20,12]],device:4}
 ];
+PRESETS.forEach((p,i)=>p.spots=searchSpots(i));
 export const MAP_DEPTH=19;
 export const mapWidth=level=>level===0?19:24;
 export const RECOGNITION_TIME=.25;
 export const MINIMAP_RADIUS=4;
 export const HOME={x:3,z:12};
-export const COVERS=[{x:2,z:7,name:'高背扶手椅'},{x:12,z:8,name:'高柜'},{x:2,z:3,name:'沙发'},{x:12,z:4,name:'书柜'},{x:15,z:5,name:'书柜'},{x:17,z:9,name:'高柜'},{x:20,z:5,name:'高背扶手椅'},{x:20,z:10,name:'高柜'},{x:16,z:16,name:'高柜'},{x:11,z:16,name:'高柜'}];
+export const COVERS=furnitureFor(2).filter(f=>f.cover);
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export function wall(x,z,level=0){
@@ -20,6 +22,7 @@ export function wall(x,z,level=0){
     if((z===7||z===14)&&![16,21].includes(x))return true;
     return false;
   }
+  if(z===14&&x>=10&&x<14&&x!==11)return true;
   if(z===10 && x!==3 && x!==11)return true;
   if(x===7&&z>=11)return true;
   if((z===4||z===8)&&x>=5&&x<=9 && !(z===8&&x===7))return true;
@@ -27,27 +30,28 @@ export function wall(x,z,level=0){
   if(z===6&&x>=10&&x!==11)return true;
   return false;
 }
-export function solid(x,z,level=0){return wall(x,z,level)||COVERS.some(c=>c.x===x&&c.z===z);}
-export function playerBlocked(x,z,level=0){
-  if(solid(x,z,level))return true;
-  const props=[[1,11],[2,11],[1,12],[2,12],[1,13],[2,13],[7,5],[7,6],[5,2],[6,2],[1,1],[8,1],[4,1],[5,13],[9,3],[16,5],[16,12],[20,1],[21,1],[22,1],[21,5],[22,5],[12,15],[13,15],[21,16]];
-  return props.some(([a,b])=>x===a&&z===b)||PRESETS[level].spots.some(([a,b])=>x===a&&z===b);
+export function canStand(x,z,level=0,radius=.20){
+  for(let iz=Math.floor(z-.8);iz<=Math.ceil(z+.8);iz++)for(let ix=Math.floor(x-.8);ix<=Math.ceil(x+.8);ix++)if(wall(ix,iz,level)&&circleHits({x,z},radius,{x:ix,z:iz,w:1,d:1}))return false;
+  return !furnitureFor(level).some(f=>circleHits({x,z},radius,f));
 }
-export function occluded(a,b,level,doors=[],lowCoverBlocks=true){
-  const len=distance(a,b),steps=Math.ceil(len*12);
-  for(let i=1;i<steps;i++){
-    const t=i/steps,x=Math.round(a.x+(b.x-a.x)*t),z=Math.round(a.z+(b.z-a.z)*t);
-    const furniture=COVERS.some(c=>c.x===x&&c.z===z&&(lowCoverBlocks||c.name==='高柜'||c.name==='书柜'));
-    if(wall(x,z,level)||furniture||doors.some(d=>!d.open&&d.x===x&&d.z===z))return true;
+export function solid(x,z,level=0){return !canStand(x,z,level,.01);}
+export function playerBlocked(x,z,level=0){return !canStand(x,z,level);}
+export function occluded(a,b,level,doors=[],lowCoverBlocks=true,ignoreId=null){
+  const steps=Math.ceil(distance(a,b)*30),furniture=furnitureFor(level).filter(f=>f.id!==ignoreId&&f.h>=(lowCoverBlocks?.74:1.35));
+  for(let i=1;i<steps;i++){const t=i/steps,p={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t};
+    if(wall(Math.round(p.x),Math.round(p.z),level)||furniture.some(f=>circleHits(p,.005,f))||doors.some(d=>circleHits(p,.005,doorShape(d))))return true;
   }return false;
 }
+// 半格导航与实际圆形碰撞使用相同数据，不把柜子空隙误当整格墙。
+const navCache=new Map();
+function navNodes(level){if(!navCache.has(level)){const nodes=new Map();for(let z=1;z<MAP_DEPTH-1;z+=.5)for(let x=1;x<mapWidth(level)-1;x+=.5)if(canStand(x,z,level,.24))nodes.set(`${x},${z}`,{x,z});navCache.set(level,nodes);}return navCache.get(level);}
 export class Game{
   constructor(level=0){this.reset(level);}
   reset(level=0){
     this.level=level;this.preset=PRESETS[level];this.player={...HOME,heading:Math.PI};
-    this.parent={x:7,z:6,heading:0,state:'sleep',a:0,recognition:0,route:[],timer:0};
+    this.parent={...PARENT_HOME,heading:0,state:'sleep',phase:'rest',intent:'patrol',a:0,recognition:0,route:[],itinerary:[],timer:0,lastRetarget:-10,scanHeading:0};
     this.doors=[{x:3,z:10,name:'卧室门',open:false,progress:0,band:this.preset.doorBand},{x:11,z:6,name:'旧木门',open:false,progress:0,band:[.42,.63]}];
-    this.spots=this.preset.spots.map(([x,z,name],i)=>({x,z,name,searched:false,device:i===this.preset.device}));
+    this.spots=this.preset.spots.map(([x,z,name,id],i)=>({x,z,name,id,searched:false,device:i===this.preset.device}));
     this.active=false;this.status='ready';this.mode=null;this.hidden=false;this.hasDevice=false;this.time=0;this.moveCooldown=0;this.noise=0;this.noiseAt={...HOME};this.noiseAge=100;this.quiet=0;this.events=[];this.toast='';this.toastLeft=0;this.history=[];this.vase='stable';this.nextVisit=level===2?32:Infinity;this.visits=0;this.speed=.5;this.pointer=.5;this.lastSnore=-9;this.lastFoot=0;this.lastDoorSound=0;this.lastSeen=0;this.aim=null;this.inspectionTarget={x:3,z:9};this.safeSteps=0;
     this.velocity={x:0,z:0};this.walked=0;this.footTile=`${HOME.x},${HOME.z}`;this.stepTransit=null;
   }
@@ -59,21 +63,14 @@ export class Game{
     // 墙和距离影响父母实际听到的声响；声响本身从不直接判负。
     const dist=distance(this.player,this.parent),attenuation=occluded(this.player,this.parent,this.level,this.doors)?.50:1;
     const heard=amount*attenuation/(1+dist*.07);
-    this.parent.a=clamp(this.parent.a+heard,0,100);if(heard>=3)this.inspectionTarget={x:this.player.x,z:this.player.z};
+    this.parent.a=clamp(this.parent.a+heard,0,100);if(heard>=6){this.inspectionTarget={x:this.player.x,z:this.player.z};if(['checking','returning'].includes(this.parent.state)&&this.time-this.parent.lastRetarget>1.2){this.parent.state='checking';this.parent.intent='investigate';this.parent.itinerary=[];this.parent.lastRetarget=this.time;this.setDestination(this.inspectionTarget);}}
     if(amount>10)this.say(label,'noise');this.emit(kind||(amount>15?'creak':'step'),amount);
   }
   doorNear(){return this.doors.find(d=>!d.open&&distance(d,this.player)<1.2);}
-  coverNear(){return COVERS.find(c=>distance(c,this.player)<1.5);}
-  spotNear(){return this.spots.find(s=>distance(s,this.player)<1.2&&!s.searched);}
+  coverNear(){return furnitureFor(this.level).find(c=>c.cover&&distance(c,this.player)<1.5);}
+  spotNear(){return this.spots.find(s=>distance(s,this.player)<1.2&&!s.searched&&!occluded(this.player,s,this.level,this.doors,true,s.id));}
   canOccupy(x,z){
-    const radius=.20;
-    for(let iz=Math.floor(z-1);iz<=Math.ceil(z+1);iz++)for(let ix=Math.floor(x-1);ix<=Math.ceil(x+1);ix++){
-      const closedDoor=this.doors.some(d=>!d.open&&d.x===ix&&d.z===iz);
-      if(!playerBlocked(ix,iz,this.level)&&!closedDoor)continue;
-      // 圆形身体与墙体碰撞，分轴滑动；不靠每格停顿防止穿墙。
-      const nx=clamp(x,ix-.49,ix+.49),nz=clamp(z,iz-.49,iz+.49);
-      if(Math.hypot(x-nx,z-nz)<radius)return false;
-    }return true;
+    return canStand(x,z,this.level)&&!this.doors.some(d=>circleHits({x,z},.20,doorShape(d)));
   }
   move(dx,dz,dt=1/60){
     if(!this.active||this.status!=='playing'||this.mode||this.stepTransit){this.velocity={x:0,z:0};return false;}
@@ -98,7 +95,7 @@ export class Game{
   }
   land(p,noise){this.player.x=p.x;this.player.z=p.z;this.footTile=`${Math.round(p.x)},${Math.round(p.z)}`;this.makeNoise(noise,noise>12?'吱呀——这块木板响了。':'轻轻落脚。');this.checkSpatialEvents();}
   checkSpatialEvents(){
-    if(this.level===2&&this.vase==='stable'&&distance(this.player,{x:9,z:2.8})<1.35){this.vase='wobbling';this.mode={type:'catch',elapsed:0,remaining:4.5};this.say('袖子擦到花瓶了！亮区内按空格接住，或按 Esc 放弃。','warning');this.emit('wobble',35);}
+    if(this.level===2&&this.vase==='stable'&&distance(this.player,{x:9.7,z:2.8})<1.35){this.vase='wobbling';this.mode={type:'catch',elapsed:0,remaining:4.5};this.say('袖子擦到花瓶了！亮区内按空格接住，或按 Esc 放弃。','warning');this.emit('wobble',35);}
     this.checkWin();
   }
   action(){
@@ -127,28 +124,50 @@ export class Game{
     return d<1.2||Math.abs(diff)<.85;
   }
   pathTo(target){
-    let end={x:Math.round(target.x),z:Math.round(target.z)},start={x:Math.round(this.parent.x),z:Math.round(this.parent.z)};
-    const key=p=>`${p.x},${p.z}`,queue=[start],prev=new Map([[key(start),null]]);let found=null;
-    while(queue.length){const p=queue.shift();if(distance(p,end)<1.1){found=p;break;}for(const [dx,dz]of[[0,1],[1,0],[-1,0],[0,-1]]){const n={x:p.x+dx,z:p.z+dz},k=key(n);if(prev.has(k)||playerBlocked(n.x,n.z,this.level)||this.doors.some(d=>!d.open&&d.x===n.x&&d.z===n.z))continue;prev.set(k,p);queue.push(n);}}
-    if(!found)return[];const path=[];for(let p=found;prev.get(key(p));p=prev.get(key(p)))path.unshift(p);return path;
+    const nodes=navNodes(this.level),all=[...nodes.values()],key=p=>`${p.x},${p.z}`;
+    const clearSegment=(a,b)=>{const n=Math.ceil(distance(a,b)*20);for(let i=0;i<=n;i++){const t=n?i/n:0;const q={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t};if(!canStand(q.x,q.z,this.level,.24)||this.doors.some(d=>d.open&&circleHits(q,.24,doorShape(d))))return false;}return true;};
+    const start=all.filter(n=>distance(n,this.parent)<1&&clearSegment(this.parent,n)).sort((a,b)=>distance(a,this.parent)-distance(b,this.parent))[0];if(!start)return[];
+    const queue=[start],prev=new Map([[key(start),null]]);let found=start;
+    for(let i=0;i<queue.length;i++){const p=queue[i];if(distance(p,target)<distance(found,target))found=p;if(distance(p,target)<.1){found=p;break;}for(const[dx,dz]of[[0,.5],[.5,0],[-.5,0],[0,-.5]]){const n=nodes.get(`${p.x+dx},${p.z+dz}`);if(!n||prev.has(key(n))||!clearSegment(p,n))continue;prev.set(key(n),p);queue.push(n);}}
+    const path=[];for(let p=found;p;p=prev.get(key(p)))path.unshift({...p});if(distance(path[0],this.parent)<.01)path.shift();return path;
   }
-  beginWarning(){if(this.parent.state==='sleep'||this.parent.state==='alert'){if(this.level===2&&this.parent.a<60){const route=[{x:16,z:3},{x:21,z:12},{x:11,z:16}];this.inspectionTarget=route[this.visits%route.length];}this.parent.state='warning';this.parent.timer=5;this.say('床板响了……父母翻身，准备起床。还有时间停下或躲藏。','warning');this.emit('bed',55,7,6);}}
+  setDestination(target){const p=this.parent;p.goal={...target};p.route=this.pathTo(target);p.phase=p.route.length?'walk':'scan';p.timer=p.intent==='investigate'?3.5:2.6;p.scanHeading=p.heading;}
+  beginWarning(){if(!['sleep','alert'].includes(this.parent.state))return;
+    const p=this.parent,scheduled=this.level===2&&p.a<60;
+    p.intent=scheduled?'patrol':'investigate';p.itinerary=scheduled?(this.visits%2?[{x:11,z:9},{x:11,z:16},{x:16,z:12}]:[{x:3,z:9},{x:16,z:3},{x:21,z:9}]):[{...this.inspectionTarget}];
+    this.inspectionTarget={...p.itinerary[0]};p.state='warning';p.phase='rest';p.timer=5;this.say('床板响了……父母翻身，准备起床。还有时间停下或躲藏。','warning');this.emit('bed',55,PARENT_HOME.x,PARENT_HOME.z);
+  }
+  patrol(dt){
+    const p=this.parent;
+    if(p.openingDoor!=null){const door=this.doors[p.openingDoor];p.phase='opening';door.progress=clamp(door.progress+dt*.72,0,1);if(door.progress===1){door.open=true;p.openingDoor=null;this.emit('latch',12,door.x,door.z);this.setDestination(p.goal);}return;}
+    if(p.route.length){
+      const dest=p.route[0],dx=dest.x-p.x,dz=dest.z-p.z,d=Math.hypot(dx,dz),heading=Math.atan2(dx,dz),diff=Math.atan2(Math.sin(heading-p.heading),Math.cos(heading-p.heading));p.heading+=clamp(diff,-dt*3,dt*3);
+      const speed=p.state==='returning'?1.15:.95,step=Math.min(d,speed*dt),next=d?{x:p.x+dx/d*step,z:p.z+dz/d*step}:{x:p.x,z:p.z};
+      const door=this.doors.find(door=>!door.open&&distance(door,p)<1.15&&circleHits({x:p.x+dx/(d||1)*.38,z:p.z+dz/(d||1)*.38},.24,doorShape(door)));
+      if(door){p.openingDoor=this.doors.indexOf(door);p.phase='opening';this.emit('doorSoft',15,door.x,door.z);return;}
+      if(this.doors.some(door=>circleHits(next,.24,doorShape(door)))){p.phase='opening';this.setDestination(p.goal);return;}
+      p.phase='walk';p.x=next.x;p.z=next.z;if(d<=step+.001)p.route.shift();
+      if(this.time-this.lastFoot>.7){this.lastFoot=this.time;this.emit('parentStep',40,p.x,p.z);}
+      if(!p.route.length){p.phase='scan';p.timer=p.intent==='investigate'?3.5:2.6;p.scanHeading=p.heading;}
+    }else if(p.state==='checking'){
+      p.phase='scan';p.timer-=dt;p.heading=p.scanHeading+Math.sin((p.intent==='investigate'?3.5:2.6)-p.timer)*.8;
+      if(p.timer<=0){if(p.itinerary.length)this.setDestination(p.itinerary.shift());else{p.state='returning';p.intent='return';this.setDestination(PARENT_HOME);this.say('脚步开始远去。等它真正离开，再继续。','good');}}
+    }else if(distance(p,PARENT_HOME)<.12){p.state='sleep';p.phase='rest';p.heading=0;p.a=12;p.recognition=0;this.visits++;this.nextVisit=this.level===2?this.time+45:Infinity;this.say('卧室重新传来鼾声。','good');}
+    else{p.phase='scan';p.timer-=dt;if(p.timer<=0)this.setDestination(PARENT_HOME);}
+  }
   tick(dt,input={}){
     if(!this.active||this.status!=='playing')return;
     dt=Math.min(dt,.06);this.time+=dt;this.moveCooldown=Math.max(0,this.moveCooldown-dt);this.noiseAge+=dt;this.quiet+=dt;this.toastLeft-=dt;
     if(this.stepTransit){const s=this.stepTransit;s.elapsed+=dt;const t=clamp(s.elapsed/.25,0,1),u=t*t*(3-2*t);this.player.x=s.from.x+(s.target.x-s.from.x)*u;this.player.z=s.from.z+(s.target.z-s.from.z)*u;if(t===1){this.stepTransit=null;this.checkSpatialEvents();}}
     this.pointer=.5+.48*Math.sin(this.time*3.8);const p=this.parent;
     if(this.quiet>3)p.a=Math.max(0,p.a-dt*2.1);
-    if(p.state==='sleep'&&p.a>=30){p.state='alert';this.say('鼾声停了。父母翻了个身，先别急。','warning');this.emit('bed',35,7,6);}
+    if(p.state==='sleep'&&p.a>=30){p.state='alert';this.say('鼾声停了。父母翻了个身，先别急。','warning');this.emit('bed',35,PARENT_HOME.x,PARENT_HOME.z);}
     if(p.state==='alert'&&p.a<20){p.state='sleep';this.say('鼾声重新响起，房间慢慢安静下来。','good');}
     if((p.state==='sleep'||p.state==='alert')&&(p.a>=60||this.time>=this.nextVisit)){this.beginWarning();this.nextVisit=Infinity;}
-    if(p.state==='sleep'&&this.time-this.lastSnore>4.4){this.lastSnore=this.time;this.emit('snore',25,7,6);}
-    if(p.state==='warning'){p.timer-=dt;if(p.timer<=0){p.state='checking';p.route=this.pathTo(this.inspectionTarget);p.timer=8;this.say('咔哒。脚步从父母房间出来了。','warning');}}
+    if(p.state==='sleep'&&this.time-this.lastSnore>4.4){this.lastSnore=this.time;this.emit('snore',25,PARENT_HOME.x,PARENT_HOME.z);}
+    if(p.state==='warning'){p.timer-=dt;if(p.timer<=0){p.state='checking';this.setDestination(p.itinerary.shift()||this.inspectionTarget);this.say('咔哒。脚步从父母房间出来了。','warning');}}
     if(p.state==='checking'||p.state==='returning'){
-      if(p.route.length){const dest=p.route[0],dx=dest.x-p.x,dz=dest.z-p.z,d=Math.hypot(dx,dz);p.heading=Math.atan2(dx,dz);const speed=p.state==='returning'?1.15:.95;if(d<speed*dt){p.x=dest.x;p.z=dest.z;p.route.shift();}else{p.x+=dx/d*speed*dt;p.z+=dz/d*speed*dt;}
-        if(this.time-this.lastFoot>.7){this.lastFoot=this.time;this.emit('parentStep',40,p.x,p.z);}}
-      else if(p.state==='checking'){p.timer-=dt;p.heading+=dt*.55;if(p.timer<=0){p.state='returning';p.route=this.pathTo({x:7,z:5});this.say('脚步开始远去。等它真正离开，再继续。','good');}}
-      else{p.state='sleep';p.x=7;p.z=6;p.heading=0;p.a=12;this.visits++;this.nextVisit=this.level===2?this.time+45:Infinity;this.say('卧室重新传来鼾声。','good');}
+      this.patrol(dt);
       if(this.visible()){
         if(p.recognition===0){this.say('灯光停在你身上——赶快离开视线！','danger');this.emit('notice',60);}
         p.recognition+=dt;

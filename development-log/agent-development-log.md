@@ -424,3 +424,65 @@ process.html、development-log/agent-development-log.md；仅同步发布结果�
 
 ### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
 等待学生再次体验家长可见性及木板声音。尚无本版满意度或阶段反思反馈，不代写认可。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 13 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 菜单风格、住宅布局与巡查重构
+**Current Goal:** 修复空气墙，让空间布置和家长行为符合直觉
+**Git Tag / Commit:** 基于 9b87e35；本轮拟发布 v0.4.0，当前在本地验证
+
+### Student Prompt
+学生要求三个主菜单选项更贴合游戏主题，修复场景不完整与空气墙，调整不合生活直觉的家具摆放，稍微细化建模，并完善家长巡查。
+
+### Agent Response Summary
+确认了旧家具模型与整格碰撞不一致、无模型的旧碰撞点、墙顶与天花板之间的缝隙，以及巡查路线不响应新声源、回程会直接跳回床位等具体问题。新增家具布局清单供碰撞与模型共同使用；菜单采用门牌、折叠地图、床头收音机图形。沿用已安装的 3D 房间技能的空间与通道检查方法，在现有 Three.js 程序化住宅上实现，未调用付费建模服务。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 在学生授权范围内选择家具尺寸、靠墙摆放与朝向，并将洗衣间补成有完整入口的小房间。适度增加柜门、拉手、书本、椅垫、床品、洗衣机滚筒与墙面装饰。
+- 家长以半格导航行走；定时起夜按轮次巡视三个地点，每处观察 2.6 秒。明显声源触发 3.5 秒调查，轻微脚步不持续提供新目标；推门后再通过。保留五秒起床预警和 0.25 秒识别。
+- 本机存档升级为 v4，旧存档保留所在关卡并重新开始该关，防止旧位置落进新家具；音量与鼠标设置保留。
+- 技能中的外部资产、Blender 场景与批准步骤不适用于本次已获授权的现有程序化场景修复。采用运行时几何检查和浏览器画面检查，没有声称通过未运行的技能验证器。
+
+### Development Action
+新增共享家具清单与细化模型；更换身体与家具、转动门板的碰撞；补齐门洞过梁、墙顶和天花板；改写巡查、观察、声源调查、推门和返程；重绘三个菜单入口；调整旧位置测试并新增布局和巡查检查。
+
+### Files / Mechanics Changed
+source/layout.js、source/furniture.js、source/engine.js、source/main.js、source/persistence.js、测试、game.html、assets/style.css、构建资源；网站与说明随验证结果继续同步。
+
+### Immediate Result
+已验证全部藏点存在可达搜索位置，以及完整巡查无穿家具或瞬移。测试发现打开的门板也会占用原路线，已让寻路避开并在开门后重算。旧用例中若干固定家具位置与整格数量已不再适用，按新布置更新。当前仍在查看浏览器实际画面与操作，尚未宣称上线完成。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+学生尚未对本轮修改反馈。继续按已有授权验证和上线，无需新的设计批准；完成后等待学生体验菜单、通道与巡查是否符合预期。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 14 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 空间与巡查本地验证完成
+**Current Goal:** 确认修改可完整游玩，准备发布
+**Git Tag / Commit:** v0.4.0
+
+### Student Prompt
+延续本轮菜单、空气墙、家具摆放、建模细节与巡查修正要求，完成测试并更新原网站。
+
+### Agent Response Summary
+逐一查看室内实际画面，发现初次重排仍把书桌放在门前，已改到侧墙并将椅子朝向桌面。第一人称补齐门洞与墙顶；全景隐藏过梁以保留剖面可读性。家长推门完整结束再重算路线，起身姿态平滑过渡。首页换为当前版本实际截图，说明页和简报同步。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 全景继续作为剖面观察图，不显示室内天花板与过梁；第一人称恢复完整几何。
+- 家长前两秒完成起身姿态过渡，但仍遵守五秒预警后才开始检查。
+
+### Development Action
+35 项自动规则检查通过；Chrome 真实按键分别完成三关搜索与返程。第三关第一次直接返程在开放走廊被家长识别，未为通过测试削弱识别；重新测试在洗衣间等待巡查经过，再返程成功。定点画面检查覆盖客厅、书房、餐厅、洗衣间、卧室、门洞、天花板和家长第一人称起身。
+
+### Files / Mechanics Changed
+布局、家具模型、场景、碰撞、巡查、保存、菜单样式、测试；assets/game-scene.png、README.md、brief.md、index.html、process.html、开发日志与构建资源。
+
+### Immediate Result
+三关实测可完成，无 JavaScript 错误；1920×1080、1366×768、390×844 菜单检查完成，窄屏无横向溢出。旧 v3 存档保留关卡重开，音量设置保留；新存档恢复位置、蹲行和视角。音效实测包含地板受力与成功短吱声、家长脚步、门轴与搜索声。测试脚本曾输入音量滑块不支持的 0.18 刻度，改为合法 0.20 后保存检查通过，这是测试输入问题。准备发布到原 GitHub Pages 地址。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+未收到学生对本轮完成版本的实际反馈。接下来按已授权范围发布并核对线上结果，等待学生再次试玩；不代写满意度或阶段反思。
