@@ -5,8 +5,8 @@ Student / Team: Daniel
 Original Life Experience: 夜间取回被家长藏起的电子设备
 Core Emotion: 紧张、克制与生活喜剧感（来自简报）
 Core Mechanic: 观察环境、落脚时机、门速调节、搜索、掩体与接住物件
-Current Game Idea: 携设备安全返回卧室；声响增加警觉，持续被识别才失败
-Current Graph / Data Structure Summary: 输入→动作噪声 N→听到的 H→警觉 A→父母状态→反馈→调整
+Current Game Idea: 借便条寻找设备、利用环境声与道具引诱，处理来电后安全返回卧室；持续被识别才失败
+Current Graph / Data Structure Summary: 线索→搜索选择；动作噪声 × 环境掩护→听到的 H→警觉 A→父母状态→反馈→调整；声源道具改变调查位置，来电新增可静音声源
 AI Agent Used: Codex
 Development Period: 2026-09-09 起
 Git Repository: https://github.com/lshhhhhhhhhh10/get-your-night-back
@@ -887,3 +887,32 @@ source/night-tools.js、night-props.js、engine.js、audio.js、main.js；game.h
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 无待确认的实施决定，继续完成发布和线上检查。之后等待学生试玩线索提示、引诱可用性和来电节奏。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 28 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 新夜探玩法上线
+**Current Goal:** 确认公开版本中的四项行为与完整流程
+**Git Tag / Commit:** 游戏 v0.8.0 / 810742d；发布记录 v0.8.1
+
+### Student Prompt
+延续“增加1 2 3和5”，完成上线。
+
+### Agent Response Summary
+四项已发布到原 GitHub Pages 地址。线上验证便条与保存、键鼠／模拟手柄的线索本和交互、玩具鸭延迟起声、洗衣机范围提示，以及来电静音、移动打断和错过预警后的补救。正式版本第一关也完成完整搜索、静音和返程，评分与记录一致。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+确认 Pages 构建对应 810742d，访问实际公开网址复测关键操作和第一关完整流程；核对首页、过程页与新增实景图片。更新过程页为已上线，并补充日志顶部的当前玩法与系统关系。
+
+### Files / Mechanics Changed
+process.html、development-log/agent-development-log.md；本条只更新发布状态，游戏仍为 v0.8.0。
+
+### Immediate Result
+https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.8.0 已生效。线上无脚本错误或资源加载失败；本地三关完整通关与 70 项规则检查通过。实体 DualSense 仍未实测，新玩法的趣味和难度尚需学生体验。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+没有待批准的实施步骤。等待学生试玩四项玩法，反馈线索是否清楚、引诱是否有用，以及来电节奏是否合适；未替学生撰写阶段反思。
