@@ -1,3 +1,4 @@
+import {createCatModel,updateCatModel,createCatToy} from './cat-model.js';
 import {CLUES,LURES,maskAt,phonePending,clueText} from './night-tools.js';
 import {buildNightProps,updateNightProps} from './night-props.js';
 import {skinById,readSkin,saveSkin} from './skins.js';
@@ -21,7 +22,7 @@ const settings=readSettings(storage);
 let equippedSkin=readSkin(storage),wardrobe;const skinTemplates=new Map(),skinRequests=new Map();
 async function loadSkinTemplate(id){const url=skinById(id).model;if(skinTemplates.has(url))return skinTemplates.get(url);if(!skinRequests.has(url))skinRequests.set(url,new GLTFLoader().loadAsync(url).then(gltf=>{skinTemplates.set(url,gltf.scene);skinRequests.delete(url);return gltf.scene;}).catch(error=>{skinRequests.delete(url);throw error;}));return skinRequests.get(url);}
 const view={mode:'overview',hasMoved:false,yaw:0,pitch:-.10};
-let nightProps=[],toolLabels=[],chargerLamp;
+let nightProps=[],toolLabels=[],chargerLamp,catMesh,catToyMesh;
 let assetTemplate,wallMeshes=[],openingMeshes=[],worldLabels=[],ceiling,sceneReady=false;
 let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){$('#loading').innerHTML='浏览器无法启动 3D。请使用开启硬件加速的 Chrome、Edge 或 Safari。';throw e;}
@@ -83,6 +84,7 @@ function buildHouse(){
   }
   const furniture=new Map();for(const f of furnitureFor(game.level)){const mesh=createFurniture(f);house.add(mesh);furniture.set(f.id,mesh);}
   for(const s of game.spots){const mesh=furniture.get(s.id),f=furnitureFor(game.level).find(f=>f.id===s.id);const marker=label('搜索',s.x,f.h+.38,s.z,'#f5d899',.48);marker.visible=false;spotMeshes.push({s,mesh,marker});}
+  catMesh=createCatModel();house.add(catMesh);catToyMesh=createCatToy();catToyMesh.visible=false;house.add(catToyMesh);
   nightProps=buildNightProps(house,game.level);toolLabels=[];
   for(const item of [...CLUES,...LURES.filter(l=>l.minLevel<=game.level)]){const marker=label(item.name,item.x,item.y+.45,item.z,'#efd5a2',.40);marker.visible=false;toolLabels.push({item,marker});}
   const target=game.spots.find(s=>s.device),support=furnitureFor(game.level).find(f=>f.id===target.id);
@@ -103,7 +105,7 @@ function buildHouse(){
   // 踢脚线只附着在可见墙面上，不伸入门洞。
   for(let z=1;z<MAP_DEPTH-1;z++)for(let x=1;x<mapWidth(game.level)-1;x++)if(!wall(x,z,game.level))for(const[dx,dz]of[[1,0],[-1,0],[0,1],[0,-1]])if(wall(x+dx,z+dz,game.level))box(dx?.035:1,.11,dz?.035:1,'#88909b',x+dx*.49,.055,z+dz*.49);
   for(const[x,z,axis]of[[2,10.51,'x'],[14.51,4.8,'z']]){const g=new THREE.Group();g.position.set(x,1.6,z);g.rotation.y=axis==='z'?Math.PI/2:0;house.add(g);box(.63,.54,.035,'#b7a185',0,0,0,g);box(.53,.44,.008,'#5b8490',0,0,.022,g);box(.29,.15,.01,'#b6b4a5',0,-.08,.029,g);}
-  vaseMesh=new THREE.Group();vaseMesh.position.set(9.7,.88,2.8);house.add(vaseMesh);cyl(.11,.2,.32,'#adbdc6',0,.16,0,vaseMesh);cyl(.09,.12,.16,'#bccdd1',0,.4,0,vaseMesh);ball(.14,'#769083',0,.69,0,vaseMesh,[.5,1.7,.5]);vaseMesh.visible=game.level===2;
+  vaseMesh=new THREE.Group();vaseMesh.position.set(9.7,.88,2.8);house.add(vaseMesh);cyl(.11,.2,.32,'#adbdc6',0,.16,0,vaseMesh);cyl(.09,.12,.16,'#bccdd1',0,.4,0,vaseMesh);ball(.14,'#769083',0,.69,0,vaseMesh,[.5,1.7,.5]);vaseMesh.visible=true;
   for(const[text,x,z]of[['你的卧室',4,12],['父母房间',7,6],['客厅',3,4.1],['书房',16,3],['储物间',16,11.8],['洗衣间',12,16.2],...(game.level>0?[['餐厅',21,3],['后走廊',21,16]]:[])])label(text,x,2.72,z,'#c5d5e5',.58);
   playerMesh=createPlayer();playerMesh.position.set(game.player.x,0,game.player.z);phoneMesh=box(.15,.26,.035,'#293349',.30,.45,.20,playerMesh.userData.body);box(.11,.19,.015,'#9bcbc6',0,0,.026,phoneMesh);phoneMesh.visible=false;parentMesh=createPlayer(true);parentMesh.position.set(7,0,6);parentMesh.visible=false;
   parentLight=new THREE.SpotLight(0xffd496,16,7,Math.PI/6,.6,1.4);parentLight.castShadow=true;parentLight.shadow.mapSize.set(512,512);parentLight.shadow.normalBias=.03;parentLight.position.set(7,1.1,6);parentTarget=new THREE.Object3D();house.add(parentTarget);parentLight.target=parentTarget;house.add(parentLight);
@@ -143,7 +145,7 @@ function returnMenu(){persist();game.active=false;game.velocity={x:0,z:0};keys.c
 function pause(){if(game.status!=='playing'||!game.active)return;persist();game.active=false;game.velocity={x:0,z:0};keys.clear();unlockMouse();$('#pause-screen').hidden=false;}
 function resume(){hideDialogs();game.active=true;keys.clear();enableAudio();}
 function toggleMap(){if(game.status!=='playing'||['catch','reaction'].includes(game.mode?.type))return;view.hasMoved=true;setView(view.mode==='firstPerson'?'overview':'firstPerson');}
-function context(){if(game.mode)return'';if(phonePending(game))return'E · 按住静音（先停下）';const tool=game.toolNear();if(tool)return tool.clue?`E · 阅读${tool.name}`:`E · 定时启动${tool.name}（本夜一次）`;const d=game.doorNear(),s=game.spotNear(),c=game.coverNear();if(d)return`E · 推开${d.name}`;if(s)return`E · 搜索${s.name}`;if(game.hidden)return'C · 站起身 · WASD 蹲行';if(c)return`C · 蹲到${c.name}后`;return game.hasDevice?'带设备回到暖光卧室':view.mode==='firstPerson'?'WASD 移动 · 鼠标看向四周':'WASD 移动 · 点击小地图切换视角';}
+function context(){if(game.mode)return'';if(phonePending(game))return'E · 按住静音（先停下）';if(game.catInteraction())return'E · 安抚猫咪 · Q 丢玩具球';const tool=game.toolNear();if(tool)return tool.clue?`E · 阅读${tool.name}`:`E · 定时启动${tool.name}（本夜一次）`;const d=game.doorNear(),s=game.spotNear(),c=game.coverNear();if(d)return`E · 推开${d.name}`;if(s)return`E · 搜索${s.name}`;if(game.hidden)return'C · 站起身 · WASD 蹲行';if(c)return`C · 蹲到${c.name}后`;return game.hasDevice?'带设备回到暖光卧室':view.mode==='firstPerson'?'WASD 移动 · 鼠标看向四周':'WASD 移动 · 点击小地图切换视角';}
 function drawMap(target,level,player=null){
   const ctx=target.getContext('2d'),w=target.width,h=target.height,pad=10,maxX=mapWidth(level)-1;
   const unit=player?Math.min(w,h)/(MINIMAP_RADIUS*2+1):Math.min((w-pad*2)/(maxX+1),(h-pad*2)/MAP_DEPTH);
@@ -166,9 +168,12 @@ function openJournal(){if(game.status!=='playing'||!$('#clues-screen').hidden)re
 function closeJournal(){$('#clues-screen').hidden=true;if(journalResume)resume();}
 $('#notes-open').onclick=openJournal;$('#notes-close').onclick=closeJournal;
 $('#phone-mute').onpointerdown=e=>{e.preventDefault();game.action();keys.add('e');e.target.setPointerCapture(e.pointerId);};$('#phone-mute').onpointerup=$('#phone-mute').onpointercancel=()=>keys.delete('e');
+function tossToy(){const yaw=view.mode==='firstPerson'?view.yaw:0;game.tossCatToy(Math.sin(yaw),-Math.cos(yaw));persist();}
+function updateCatUI(){const c=game.cat,near=game.catNear(5.5);$('#cat-panel').hidden=!game.active||!near||!!game.mode||phonePending(game);const names={idle:'猫在看着你',follow:'猫悄悄跟了过来',rub:'猫正贴着腿蹭蹭',calm:'呼噜噜……猫很满足',toy:'猫追着玩具球去了',play:'猫正和球较劲',approach:'猫盯上了花瓶',prepare:`猫准备起跳 · ${Math.max(0,c.timer).toFixed(1)} 秒`,jump:'猫扑向桌沿！'};$('#cat-state').textContent=names[c.state];$('#cat-pet').disabled=!game.catNear()||['calm','play','jump'].includes(c.state);$('#cat-pet').textContent=padText('E · 安抚');$('#cat-toy').disabled=c.toyCooldown>0||c.state==='jump';$('#cat-toy').textContent=c.toyCooldown>0?`玩具 · ${Math.ceil(c.toyCooldown)} 秒后可用`:inputDevice==='gamepad'?'R2 · 丢玩具球':'Q · 丢玩具球';}
+$('#cat-pet').onclick=()=>{game.petCat();persist();};$('#cat-toy').onclick=tossToy;
 function updateNightUI(){const mask=maskAt(game);$('#mask-cue').textContent=mask?`${mask.name}掩护中 · 可直接走过木板`:'留意长鼾声与洗衣机脱水声';$('#mask-cue').classList.toggle('active',!!mask);$('#notes-open').textContent=`线索 ${game.night.clues.length}/2`;
  const phone=game.night.phone;$('#phone-panel').hidden=!phonePending(game)||!game.active||['catch','reaction'].includes(game.mode?.type);$('#phone-state').textContent=phone.state==='warning'?`来电预兆 · ${Math.max(0,phone.timer).toFixed(1)} 秒后响铃`:'手机正在响铃';$('#phone-hold').style.width=`${Math.min(100,phone.hold/1.2*100)}%`;$('#phone-mute').textContent=padText('停下，按住 E · 1.2 秒静音');$('#phone-help').textContent=game.mode?padText('先按 Esc 停下当前动作，再静音。'):'可蹲着静音；移动会打断进度。';}
-function updateUI(){updateNightUI();
+function updateUI(){updateNightUI();updateCatUI();
   const p=game.parent,m=game.mode;const cinematic=['catch','reaction'].includes(m?.type);document.body.classList.toggle('incident-active',cinematic&&game.active);$('#incident-caption').hidden=!cinematic;$('#incident-caption').textContent=cinematic?(m.type==='reaction'?(m.success?'接住了。':'糟了，落地了。'):'那一瞬间，时间慢了下来。'):'';$('#objective').textContent=game.hasDevice?'带设备回到卧室':'探索房间，找回设备';$('#device-icon').classList.toggle('found',game.hasDevice);$('#parent-cue').textContent=stateNames[p.state];$('#parent-cue').dataset.state=p.state;$('#context').textContent=context();$('#context').hidden=!context();$('#hide-badge').hidden=!game.hidden;
   $('#preset-title').textContent=`0${game.level+1} / ${PRESETS[game.level].name}`;$('#view-name').textContent=view.mode==='firstPerson'?'第一人称':'全景';$('#minimap-button').setAttribute('aria-label',view.mode==='firstPerson'?'切换第三人称全景':'切换第一人称近景');$('#crosshair').hidden=view.mode!=='firstPerson'||!game.active;
   $('#look-hint').hidden=view.mode!=='firstPerson'||!game.active||game.hidden||!!document.pointerLockElement;drawMap($('#minimap'),game.level,game.player);
@@ -207,7 +212,7 @@ document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();if(e.target.matches('input,select')&&k!=='escape')return;
   if(k==='escape'){e.preventDefault();escape();return;}if(!game.active||game.status!=='playing')return;
   if([...movementKeys,' ','tab'].includes(k))e.preventDefault();
-  if(k==='j'&&!e.repeat){openJournal();return;}if(k==='tab'){unlockMouse();return;}if(k==='m'&&!e.repeat){toggleMap();return;}
+  if(k==='q'&&!e.repeat){tossToy();return;}if(k==='j'&&!e.repeat){openJournal();return;}if(k==='tab'){unlockMouse();return;}if(k==='m'&&!e.repeat){toggleMap();return;}
   keys.add(k);if(movementKeys.includes(k)&&!view.hasMoved){view.hasMoved=true;setView('firstPerson');keys.add(k);}
   if(e.repeat)return;if(k==='e'){game.action();persist();}if(k===' '){game.pressSpace();persist();}if(k==='c'){game.hide();persist();}
 });
@@ -219,13 +224,13 @@ window.addEventListener('blur',pause);document.addEventListener('visibilitychang
 window.addEventListener('wheel',e=>{if(game.active&&game.mode?.type==='door'){e.preventDefault();game.speed=clamp(game.speed-e.deltaY*.0006,.05,1);}},{passive:false});
 $('#door-speed').oninput=e=>game.speed=Number(e.target.value);$('#timing-button').onclick=()=>game.pressSpace();$('#cancel-action').onclick=()=>game.cancel();
 $('#push-door').onpointerdown=e=>{e.preventDefault();keys.add('e');e.target.setPointerCapture(e.pointerId);};$('#push-door').onpointerup=()=>keys.delete('e');$('#push-door').onpointercancel=()=>keys.delete('e');
-$('#context').onclick=()=>{if(phonePending(game)||game.toolNear()||game.doorNear()||game.spotNear())game.action();else game.hide();};
+$('#context').onclick=()=>{if(phonePending(game)||game.catInteraction()||game.toolNear()||game.doorNear()||game.spotNear())game.action();else game.hide();};
 for(const el of document.querySelectorAll('[data-move]')){el.onpointerdown=e=>{e.preventDefault();if(!view.hasMoved){view.hasMoved=true;setView('firstPerson');}keys.add(el.dataset.move);el.setPointerCapture(e.pointerId);};el.onpointerup=()=>keys.delete(el.dataset.move);el.onpointercancel=()=>keys.delete(el.dataset.move);}
 // Controller input is polled even while menus are open; it never synthesizes keyboard events.
 const padInput=new GamepadInput(),menuRepeat=new MenuRepeat();
 let padFrame=emptyFrame(),inputDevice='keyboard',controllerContext='',controllerFocus=null,controllerLost=false;
 const keyboardLegend=$('.controls-legend').innerHTML;
-function padText(text){return inputDevice==='gamepad'?text.replaceAll('WASD','左摇杆').replaceAll('空格','×').replaceAll('Esc','○').replace(/\bE\b/g,'□').replace(/\bC\b/g,'○').replace(/\bM\b/g,'△').replaceAll('鼠标看向四周','右摇杆看向四周').replaceAll('鼠标转头','右摇杆转头').replaceAll('滚轮、左右键或滑块','L1 / R1').replaceAll('点击小地图','按 △'):text;}
+function padText(text){return inputDevice==='gamepad'?text.replaceAll('WASD','左摇杆').replaceAll('空格','×').replace(/\bQ\b/g,'R2').replaceAll('Esc','○').replace(/\bE\b/g,'□').replace(/\bC\b/g,'○').replace(/\bM\b/g,'△').replaceAll('鼠标看向四周','右摇杆看向四周').replaceAll('鼠标转头','右摇杆转头').replaceAll('滚轮、左右键或滑块','L1 / R1').replaceAll('点击小地图','按 △'):text;}
 function useInput(device){
   if(inputDevice===device)return;inputDevice=device;document.body.classList.toggle('using-gamepad',device==='gamepad');lastToast='';lastUi=0;
   if(device==='gamepad')unlockMouse();else document.querySelectorAll('.gamepad-focus').forEach(el=>el.classList.remove('gamepad-focus'));
@@ -285,6 +290,7 @@ function pollController(now,dt){
     view.yaw+=frame.right.x*2.2*settings.gamepadSensitivity*dt;
     view.pitch=clamp(view.pitch-frame.right.y*1.7*settings.gamepadSensitivity*dt,-.95,.8);
   }
+  if(frame.pressed[7]&&!cinematic){tossToy();}
   if(frame.pressed[BUTTON.back]){if(game.mode)game.cancel();else game.hide();persist();}
   else if(frame.pressed[BUTTON.confirm]){game.pressSpace();persist();}
   else if(frame.pressed[BUTTON.interact]){game.action();persist();}
@@ -337,6 +343,7 @@ function animate(now){
   parentLight.visible=['checking','returning'].includes(p.state);parentLight.position.set(p.x,1.25,p.z);parentTarget.position.set(p.x+Math.sin(p.heading)*4,.05,p.z+Math.cos(p.heading)*4);
   for(const{d,pivot}of doorMeshes)pivot.rotation.y=d.progress*Math.PI*.49;
   for(const{s,mesh,marker}of spotMeshes){marker.visible=!s.searched&&distance(s,game.player)<2&&!occluded(game.player,s,game.level,game.doors,true,s.id);}
+  updateCatModel(catMesh,game.cat,game.time);catToyMesh.visible=!!game.cat.toy;if(game.cat.toy){const t=game.cat.toy,u=Math.min(1,t.age/.5);catToyMesh.position.set(t.from.x+(t.x-t.from.x)*u,.07+Math.sin(u*Math.PI)*.35,t.from.z+(t.z-t.from.z)*u);catToyMesh.rotation.x=game.time*3;}
   updateNightProps(nightProps,game);const nearest=game.toolNear();for(const {item,marker}of toolLabels)marker.visible=game.active&&nearest?.id===item.id;chargerLamp.visible=!game.hasDevice;
   stepTarget.visible=game.mode?.type==='step';if(stepTarget.visible)stepTarget.position.set(game.mode.target.x,.045,game.mode.target.z);
   vaseMesh.rotation.z=game.vase==='wobbling'?Math.sin(now*.023)*.32:game.vase==='fallen'?Math.PI/2:0;vaseMesh.position.y=game.vase==='fallen'?.18:.88;
@@ -361,4 +368,4 @@ async function boot(){
   catch(e){$('#loading').replaceChildren();const text=document.createElement('p');text.textContent='角色模型未能载入。请检查网络后重试。';const b=document.createElement('button');b.className='primary';b.textContent='重新载入';b.onclick=()=>location.reload();$('#loading').append(text,b);console.error(e);}
 }
 requestAnimationFrame(animate);boot();
-window.gameSnapshot=()=>({ready:sceneReady,status:game.status,active:game.active,level:game.level,player:{...game.player},parent:{...game.parent,route:undefined},mode:game.mode?.type,hasDevice:game.hasDevice,hidden:game.hidden,time:game.time,realTime:game.realTime,incident:game.mode?.incidentId?{id:game.mode.incidentId,type:game.mode.type,elapsed:game.mode.elapsed,remaining:game.mode.remaining,success:game.mode.success}:null,performance:game.performance(),metrics:{...game.metrics},fps,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,doors:game.doors.map(d=>({x:d.x,z:d.z,open:d.open,progress:d.progress})),vase:game.vase,view:{...view},camera:camera.position.toArray(),velocity:{...game.velocity},modelLoaded:!!assetTemplate,night:{...structuredClone(game.night),mask:maskAt(game),nearTool:game.toolNear()?.id},skin:{equipped:equippedSkin,rendered:playerMesh?.userData.skinId,preview:wardrobe?.selected,previewReady:wardrobe?.ready,open:!$('#skin-screen').hidden},settings:{...settings},controller:{connected:padInput.connected,standard:padInput.connected,index:padInput.index,inputDevice,blocked:padInput.blocked,context:controllerContext},map:{width:mapWidth(game.level),depth:MAP_DEPTH,radius:MINIMAP_RADIUS,markedFloors:false},recognitionTime:RECOGNITION_TIME,parentRender:{skin:parentMesh?.userData.skinId,visible:parentMesh?.visible??false,model:parentMesh?.userData.role==='parent'?'peak':'loading',pose:game.parent.state,position:parentMesh?.position.toArray()??[]},audio:soundscape?{state:audioContext.state,...soundscape.stats}:null});
+window.gameSnapshot=()=>({ready:sceneReady,status:game.status,active:game.active,level:game.level,player:{...game.player},parent:{...game.parent,route:undefined},mode:game.mode?.type,hasDevice:game.hasDevice,hidden:game.hidden,time:game.time,realTime:game.realTime,incident:game.mode?.incidentId?{id:game.mode.incidentId,type:game.mode.type,elapsed:game.mode.elapsed,remaining:game.mode.remaining,success:game.mode.success}:null,performance:game.performance(),metrics:{...game.metrics},fps,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,doors:game.doors.map(d=>({x:d.x,z:d.z,open:d.open,progress:d.progress})),vase:game.vase,view:{...view},camera:camera.position.toArray(),velocity:{...game.velocity},modelLoaded:!!assetTemplate,cat:{...structuredClone(game.cat),visible:catMesh?.visible},night:{...structuredClone(game.night),mask:maskAt(game),nearTool:game.toolNear()?.id},skin:{equipped:equippedSkin,rendered:playerMesh?.userData.skinId,preview:wardrobe?.selected,previewReady:wardrobe?.ready,open:!$('#skin-screen').hidden},settings:{...settings},controller:{connected:padInput.connected,standard:padInput.connected,index:padInput.index,inputDevice,blocked:padInput.blocked,context:controllerContext},map:{width:mapWidth(game.level),depth:MAP_DEPTH,radius:MINIMAP_RADIUS,markedFloors:false},recognitionTime:RECOGNITION_TIME,parentRender:{skin:parentMesh?.userData.skinId,visible:parentMesh?.visible??false,model:parentMesh?.userData.role==='parent'?'peak':'loading',pose:game.parent.state,position:parentMesh?.position.toArray()??[]},audio:soundscape?{state:audioContext.state,...soundscape.stats}:null});

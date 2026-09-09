@@ -47,6 +47,10 @@ export class Soundscape{
     const note=(time,f,duration,level,type='sine')=>tone(ctx,g,time,f,duration,level,type);
     const sampled=kind==='doorHandle'?this.sample('handle',g,t,.7,1,0,.7):kind==='doorSoft'?this.sample('hinge',g,t,.18,.94,.15,.64):kind==='doorCreak'?this.sample('hinge',g,t,.66,.75,.10,.67):kind==='doorBump'?this.sample('bump',g,t,.8,.92):kind==='latch'?this.sample('latch',g,t,.55,1.05,.32,.32):kind==='metalDrop'?this.sample('metal',g,t,.8,.93):kind==='search'?this.sample('drawer',g,t,.22,.9,0,.55):false;
     if(sampled){/* 真实把手、门轴、木门撞击和金属碰撞，不叠加旧电子滑音。 */}
+    else if(kind==='catMeow'||kind==='catChirp'){const o=ctx.createOscillator(),f=ctx.createBiquadFilter(),e=ctx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(kind==='catMeow'?480:700,t);o.frequency.exponentialRampToValueAtTime(kind==='catMeow'?780:1000,t+.12);o.frequency.exponentialRampToValueAtTime(340,t+.48);f.type='bandpass';f.frequency.value=1400;f.Q.value=1.3;e.gain.setValueAtTime(.0001,t);e.gain.exponentialRampToValueAtTime(.07,t+.06);e.gain.exponentialRampToValueAtTime(.0001,t+.52);o.connect(f);f.connect(e);e.connect(g);o.start(t);o.stop(t+.55);o.onended=()=>{o.disconnect();f.disconnect();e.disconnect();};}
+    else if(kind==='catPurr'){for(let i=0;i<24;i++)note(t+i*.045,65,.04,.035,'triangle');burst(t,1.1,.055,180,1.2);}
+    else if(kind==='catToy'){for(let i=0;i<3;i++){note(t+i*.13,150+i*50,.08,.035,'triangle');burst(t+i*.13,.05,.04,500,1);}}
+    else if(kind==='catHop'){burst(t,.12,.06,420,1);}
     else if(kind==='washer'){burst(t,1.85,.20,180,1.2);for(let i=0;i<7;i++)note(t+i*.24,65,.19,.08,'triangle');}
     else if(kind==='radio'){burst(t,.35,.08,900,.8);for(const [i,f]of [330,440,392,494].entries())note(t+i*.20,f,.24,.10,'triangle');}
     else if(kind==='toy'){for(let i=0;i<2;i++){note(t+i*.35,620-i*140,.18,.12,'triangle');burst(t+i*.35,.15,.10,1050,3);}}

@@ -14,3 +14,8 @@
 - 纸箱、抱枕耳罩、星星睡帽由 `source/skin-model.js` 用程序化几何构成，部分衣服使用独立纯色材质。基础人体、脸部和骨架来源仍是第三个附件角色。
 
 新增角色处理记录见 `character-1-provenance.json`、`character-2-provenance.json`，可重现脚本见 `source/tools/export-wardrobe.py`。六张卡片缩略图与首页衣柜图由实际游戏预览截取。此记录不赋予或声称其他游戏的模型许可；没有下载其他游戏角色包。
+
+
+## 家猫（v0.9.0）
+
+家猫由本项目 `source/cat-model.js` 的程序几何直接生成，未使用 PEAK 附件或下载其他游戏的猫模型。橘色身体、曲面条纹、圆头、耳朵、胡须、眼睛、四肢和分节尾巴均在代码中制作与驱动。没有新增 GLB 或贴图文件；场景和接花瓶特写共用这套模型。行为在 `source/cat.js` 中维护，声音在 `source/audio.js` 中合成。

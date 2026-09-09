@@ -1,3 +1,4 @@
+import {newCat,tickCat,catNear,catInteraction,petCat,tossCatToy,restoreCat} from './cat.js';
 import {CLUES,LURES,WASHER,newNightTools,maskAt,phonePending,clueText} from './night-tools.js';
 import {newMetrics,evaluatePerformance} from './performance.js';
 import {INCIDENTS,incidentRoll,CATCH_DURATION,CATCH_INTRO,CATCH_SWEEP,SLOW_FACTOR} from './incidents.js';
@@ -56,7 +57,7 @@ export class Game{
     this.doors=[{x:3,z:10,name:'卧室门',open:false,progress:0,band:this.preset.doorBand},{x:11,z:6,name:'旧木门',open:false,progress:0,band:[.42,.63]}];
     this.spots=this.preset.spots.map(([x,z,name,id],i)=>({x,z,name,id,searched:false,device:i===this.preset.device}));
     this.active=false;this.status='ready';this.mode=null;this.hidden=false;this.hasDevice=false;this.time=0;this.moveCooldown=0;this.noise=0;this.noiseAt={...HOME};this.noiseAge=100;this.quiet=0;this.events=[];this.toast='';this.toastLeft=0;this.history=[];this.vase='stable';this.nextVisit=level===2?32:Infinity;this.visits=0;this.speed=.5;this.pointer=.5;this.lastSnore=-9;this.lastFoot=0;this.lastDoorSound=0;this.lastSeen=0;this.aim=null;this.inspectionTarget={x:3,z:9};this.safeSteps=0;
-    this.night=newNightTools();this.metrics=newMetrics();this.seed=Math.floor(Math.random()*4294967296)>>>0;this.incidentUsed={};this.incidentOutcomes={};this.realTime=0;
+    this.cat=newCat();this.night=newNightTools();this.metrics=newMetrics();this.seed=Math.floor(Math.random()*4294967296)>>>0;this.incidentUsed={};this.incidentOutcomes={};this.realTime=0;
     this.velocity={x:0,z:0};this.walked=0;this.footTile=`${HOME.x},${HOME.z}`;this.stepTransit=null;
   }
   start(){this.status='playing';this.active=true;this.say('床头有张便条。靠近后按 E 读线索，再决定往哪里找。','hint');}
@@ -96,6 +97,11 @@ export class Game{
     if(phone.state==='warning'){const second=Math.ceil(phone.timer);if(second!==phone.lastCue){phone.lastCue=second;this.emit('phoneBuzz',4);}if(phone.timer<=0){phone.state='ringing';phone.timer=0;this.say('来电响了！停下，按住 E 静音。','warning');}}
     if(phone.state==='ringing'&&phone.timer<=0){phone.rings++;this.makeNoise(38,'手机铃声传进了走廊。','phoneRing');phone.timer=2.4;if(phone.rings>=3){phone.state='missed';phone.armed=false;this.say('来电挂断了。留意父母的脚步。','warning');}}
   }
+  catCanSee(a,b){return !occluded(a,b,this.level,this.doors,true);}
+  catNear(radius){return catNear(this,radius);}
+  catInteraction(){return catInteraction(this);}
+  petCat(){return petCat(this);}
+  tossCatToy(dx,dz){return tossCatToy(this,dx,dz);}
   doorNear(){return this.doors.find(d=>!d.open&&distance(d,this.player)<1.2);}
   coverNear(){return furnitureFor(this.level).find(c=>c.cover&&distance(c,this.player)<1.5);}
   spotNear(){return this.spots.find(s=>distance(s,this.player)<1.2&&!s.searched&&!occluded(this.player,s,this.level,this.doors,true,s.id));}
@@ -133,6 +139,7 @@ export class Game{
     if(!this.active||this.status!=='playing')return;
     if(this.mode)return;
     if(phonePending(this)){this.night.phone.armed=true;return;}
+    if(this.catInteraction()){this.petCat();return;}
     const tool=this.toolNear();if(tool){if(tool.clue){this.night.clues.push(tool.id);this.say(clueText(this.level,tool.id),'clue');}else{this.night.lures[tool.id]={timer:2.5,pulses:0,done:false};this.say(`${tool.name} 已定时，2.5 秒后响起。先离开这里。`,'hint');this.emit('switch',5);}return;}
     const d=this.doorNear();if(d){this.mode={type:'door',door:d,elapsed:0};this.speed=.5;this.emit('doorHandle',5);this.say('按住 E 推门；滚轮、左右键或滑块调整速度。听门轴的声音。','hint');return;}
     const s=this.spotNear();if(s){this.mode={type:'search',spot:s,elapsed:0};this.say('轻轻翻找……有动静时按 Esc 立即停下。','hint');return;}
@@ -162,8 +169,8 @@ export class Game{
     const m=this.mode;if(m?.type!=='catch')return;const id=m.incidentId||'vase',event=INCIDENTS[id];
     this.incidentOutcomes[id]=success?'caught':'fallen';if(success)this.metrics.catches++;
     if(id==='vase')this.vase=success?'caught':'fallen';
-    if(success){this.say(event.success,'good');this.emit('cloth',8);}else this.makeNoise(event.noise,`${event.failure} 先听听父母的动静。`,event.sound);
-    this.mode={type:'reaction',incidentId:id,elapsed:0,success,resume:m.resume};
+    if(success){this.say(event.success,'good');this.emit('cloth',8);}else if(m.noiseSource){const amount=event.noise*(maskAt(this,m.noiseSource)?.factor||1);this.metrics.loudSounds++;this.metrics.noiseBurden+=Math.max(0,amount-10);this.quiet=0;this.noise=amount;this.noiseAt={...m.noiseSource};this.noiseAge=0;this.hearNoise(amount,m.noiseSource);this.say(`${event.failure} 先听听父母的动静。`,'noise');this.emit(event.sound,amount,m.noiseSource.x,m.noiseSource.z);}else this.makeNoise(event.noise,`${event.failure} 先听听父母的动静。`,event.sound);
+    this.mode={type:'reaction',noiseSource:m.noiseSource,incidentId:id,elapsed:0,success,resume:m.resume};
   }
   performance(){return evaluatePerformance(this);}
   checkWin(){if(this.hasDevice&&this.player.z>=11&&this.player.x<=6&&this.status==='playing'){this.status='won';this.mode=null;this.say('安全回到卧室。今晚的时间，拿回来了。','good');this.emit('win',50);}}
@@ -171,13 +178,13 @@ export class Game{
     const bearing=Math.atan2(this.player.x-this.parent.x,this.player.z-this.parent.z),diff=Math.atan2(Math.sin(bearing-this.parent.heading),Math.cos(bearing-this.parent.heading));
     return d<1.2||Math.abs(diff)<.85;
   }
-  pathTo(target){
+  pathTo(target,origin=this.parent,blockClosed=false){
     const nodes=navNodes(this.level),all=[...nodes.values()],key=p=>`${p.x},${p.z}`;
-    const clearSegment=(a,b)=>{const n=Math.ceil(distance(a,b)*20);for(let i=0;i<=n;i++){const t=n?i/n:0;const q={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t};if(!canStand(q.x,q.z,this.level,.24)||this.doors.some(d=>d.open&&circleHits(q,.24,doorShape(d))))return false;}return true;};
-    const start=all.filter(n=>distance(n,this.parent)<1&&clearSegment(this.parent,n)).sort((a,b)=>distance(a,this.parent)-distance(b,this.parent))[0];if(!start)return[];
+    const clearSegment=(a,b)=>{const n=Math.ceil(distance(a,b)*20);for(let i=0;i<=n;i++){const t=n?i/n:0;const q={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t};if(!canStand(q.x,q.z,this.level,.24)||this.doors.some(d=>(d.open||blockClosed)&&circleHits(q,.24,doorShape(d))))return false;}return true;};
+    const start=all.filter(n=>distance(n,origin)<1&&clearSegment(origin,n)).sort((a,b)=>distance(a,origin)-distance(b,origin))[0];if(!start)return[];
     const queue=[start],prev=new Map([[key(start),null]]);let found=start;
     for(let i=0;i<queue.length;i++){const p=queue[i];if(distance(p,target)<distance(found,target))found=p;if(distance(p,target)<.1){found=p;break;}for(const[dx,dz]of[[0,.5],[.5,0],[-.5,0],[0,-.5]]){const n=nodes.get(`${p.x+dx},${p.z+dz}`);if(!n||prev.has(key(n))||!clearSegment(p,n))continue;prev.set(key(n),p);queue.push(n);}}
-    const path=[];for(let p=found;p;p=prev.get(key(p)))path.unshift({...p});if(distance(path[0],this.parent)<.01)path.shift();return path;
+    const path=[];for(let p=found;p;p=prev.get(key(p)))path.unshift({...p});if(distance(path[0],origin)<.01)path.shift();return path;
   }
   setDestination(target){const p=this.parent;p.goal={...target};p.route=this.pathTo(target);p.phase=p.route.length?'walk':'scan';p.timer=p.intent==='investigate'?3.5:2.6;p.scanHeading=p.heading;}
   beginWarning(){if(!['sleep','alert'].includes(this.parent.state))return;
@@ -223,6 +230,7 @@ export class Game{
       }else if(!cinematic)p.recognition=0;
     }
     this.tickNightTools(dt,input,cinematic);
+    tickCat(this,dt);
     const m=this.mode;if(m){m.elapsed+=cinematic?realDt:dt;
       if(m.type==='door'&&input.e){
         const d=m.door,s=this.speed,good=s>=d.band[0]&&s<=d.band[1];this.metrics.doorSeconds+=dt;if(good)this.metrics.quietDoorSeconds+=dt;d.progress=clamp(d.progress+dt*(.10+s*.15),0,1);
@@ -239,11 +247,11 @@ export class Game{
     }
   }
   serialize(){
-    const fields=['night','metrics','seed','incidentUsed','incidentOutcomes','realTime','level','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','speed','pointer','lastSnore','lastFoot','lastDoorSound','inspectionTarget','safeSteps','walked','footTile','stepTransit','status'];
+    const fields=['cat','night','metrics','seed','incidentUsed','incidentOutcomes','realTime','level','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','speed','pointer','lastSnore','lastFoot','lastDoorSound','inspectionTarget','safeSteps','walked','footTile','stepTransit','status'];
     const data=Object.fromEntries(fields.map(k=>[k,structuredClone(this[k])]));
     data.nextVisit=Number.isFinite(this.nextVisit)?this.nextVisit:null;
     data.doors=this.doors.map(d=>({open:d.open,progress:d.progress}));data.searched=this.spots.map(s=>s.searched);
-    data.mode=this.mode?{type:this.mode.type,incidentId:this.mode.incidentId,resume:this.mode.resume,success:this.mode.success,elapsed:this.mode.elapsed,remaining:this.mode.remaining,target:this.mode.target,tile:this.mode.tile,continuous:this.mode.continuous,doorIndex:this.doors.indexOf(this.mode.door),spotIndex:this.spots.indexOf(this.mode.spot)}:null;
+    data.mode=this.mode?{noiseSource:this.mode.noiseSource,type:this.mode.type,incidentId:this.mode.incidentId,resume:this.mode.resume,success:this.mode.success,elapsed:this.mode.elapsed,remaining:this.mode.remaining,target:this.mode.target,tile:this.mode.tile,continuous:this.mode.continuous,doorIndex:this.doors.indexOf(this.mode.door),spotIndex:this.spots.indexOf(this.mode.spot)}:null;
     return data;
   }
   restore(data){
@@ -264,6 +272,7 @@ export class Game{
     this.nextVisit=data.nextVisit===null?Infinity:data.nextVisit;this.doors.forEach((d,i)=>Object.assign(d,data.doors[i]||{}));this.spots.forEach((s,i)=>s.searched=Boolean(data.searched?.[i]));
     if(!this.canOccupy(this.player.x,this.player.z)){this.reset(data.level);return false;}
     if(data.mode){this.mode={...data.mode};if(this.mode.type==='catch'&&!this.mode.incidentId){this.mode.incidentId='vase';this.mode.elapsed=0;this.mode.remaining=CATCH_DURATION;this.metrics.incidents++;}if(this.mode.type==='door')this.mode.door=this.doors[this.mode.doorIndex];if(this.mode.type==='search')this.mode.spot=this.spots[this.mode.spotIndex];if(this.mode.type==='door'&&!this.mode.door||this.mode.type==='search'&&!this.mode.spot)this.mode=null;}
+    this.cat=restoreCat(this,data.cat);
     this.status='playing';this.active=false;this.velocity={x:0,z:0};return true;
   }
 }

@@ -35,3 +35,5 @@
 @media(max-width:760px){#phone-panel{left:12px;bottom:235px;width:210px;padding:12px}#phone-panel strong{font-size:13px}.clues-dialog article{padding:14px 16px}.clues-dialog article p{font-size:14px}#mask-cue{font-size:10px;margin-bottom:7px;padding-bottom:6px}}
 
 @media(max-width:760px){.game-page .mission-panel{top:210px;left:12px;max-width:calc(100vw - 24px)}.game-page .game-tools{bottom:64px;right:12px}}
+
+#cat-panel{position:absolute;z-index:13;left:24px;bottom:90px;width:260px;background:#1b2b3fec;border:1px solid #cfb58780;border-radius:18px;padding:15px;box-shadow:0 6px 22px #0004}#cat-panel strong{font-size:14px;color:#edcc99}#cat-panel p{font-size:11px;color:#aebacc;margin:6px 0 12px}#cat-panel>div{display:flex;gap:8px}#cat-panel button{border:1px solid #d2b28166;border-radius:8px;padding:8px 10px;color:#f0d6a9;background:#344154;font-size:12px}#cat-panel button:disabled{opacity:.4}@media(max-width:760px){#cat-panel{left:12px;bottom:240px;width:230px;padding:12px}#cat-panel strong{font-size:13px}}

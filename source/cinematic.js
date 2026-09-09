@@ -1,3 +1,4 @@
+import {createCatModel,updateCatModel} from './cat-model.js';
 import * as THREE from 'three';
 import {INCIDENTS,CATCH_DURATION} from './incidents.js';
 // 物件特写独立布景，避免近摄穿进柜子或墙里；结束后恢复玩家原视角。
@@ -6,6 +7,7 @@ export class IncidentCamera{
   this.scene=new THREE.Scene();this.scene.background=new THREE.Color('#142235');
   this.camera=new THREE.PerspectiveCamera(42,1,.05,20);this.camera.position.set(0,1.35,3.05);this.camera.lookAt(0,.82,0);
   this.scene.add(new THREE.HemisphereLight(0xc4dcff,0x344258,2.8));const light=new THREE.DirectionalLight(0xffd6a0,4);light.position.set(-2,4,3);this.scene.add(light);
+  this.cat=createCatModel();this.scene.add(this.cat);this.cat.visible=false;
   this.props=new Map();this.materials=new Map();this.table=this.box(4,.08,3.5,'#aa8b70',0,.04,-.15);
   this.box(2.3,1.05,.58,'#5a7180',0,.605,-1);this.box(2.4,.08,.70,'#c3b698',0,1.17,-.98);
   this.box(1.85,.21,.06,'#8a9e9f',0,.95,-.44);this.box(.32,.04,.06,'#d6c19c',0,.95,-.39);
@@ -25,6 +27,7 @@ export class IncidentCamera{
   return g;
  }
  render(renderer,mode,aspect){
+  this.cat.visible=!!mode.noiseSource;if(this.cat.visible){updateCatModel(this.cat,{x:-.85,z:-.2,state:'prepare',heading:.35,route:[]},mode.elapsed);this.cat.position.y=.085;this.cat.userData.head.rotation.x=-.35;}
   const event=INCIDENTS[mode.incidentId||'vase'],reaction=mode.type==='reaction',t=reaction?1:Math.min(1,mode.elapsed/CATCH_DURATION);
   this.table.material=this.mat(event.kind==='fork'?'#a1b7ac':event.kind==='tin'?'#8c8390':'#aa8b70');
   for(const[k,g]of this.props){g.visible=k===event.kind;if(!g.visible)continue;
