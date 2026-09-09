@@ -763,3 +763,32 @@ source/skins.js、source/skin-model.js、source/wardrobe.js、source/main.js、s
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 学生尚未反馈本轮外观。继续完成公开发布并检查；之后等待学生体验六套造型、菜单选择和手柄旋转。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 24 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 皮肤衣柜上线
+**Current Goal:** 确认公开游戏中可以选择并保存六套外观
+**Git Tag / Commit:** 游戏 v0.7.0 / 50bc8dc；发布记录 v0.7.1
+
+### Student Prompt
+延续菜单皮肤系统要求，将已完成版本更新到原公开游戏。
+
+### Agent Response Summary
+GitHub Pages 已发布衣柜版本。正式网址逐套验证围巾、螃蟹、厨师、纸箱、抱枕与睡帽外观，模型和缩略图全部加载。选择预览、穿上确认、刷新保留、继续游戏与家长独立外观均正常。PS5 模拟输入可打开衣柜、选择、旋转、穿戴并返回。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+确认 Pages 构建完成，在线重做关键操作，检查 1366 与 390 像素宽度菜单。同步过程页为实际发布状态。
+
+### Files / Mechanics Changed
+process.html、development-log/agent-development-log.md；只记录上线状态，游戏仍为 v0.7.0。
+
+### Immediate Result
+https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.7.0 已生效。线上检查没有脚本或资源错误；本地 56 项规则检查和新角色完整通关已通过。三套附件角色与三套配件改装的来源保持明确，未把它们写成六套完全原创人物。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+尚未收到学生对衣柜版本的反馈。等待学生试玩六套造型，反馈外观偏好、三维预览和手柄操作；没有待确认的实施决定。
