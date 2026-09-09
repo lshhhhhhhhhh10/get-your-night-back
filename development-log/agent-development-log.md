@@ -611,3 +611,64 @@ https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.5.0 已生效
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 等待学生实际体验本版评分、门声音色、时间区间和慢动作事件。尚未收到本版认可或反思，不替学生填写。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 19 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** PS5 手柄接入
+**Current Goal:** 让 USB 连接的 DualSense 能操作菜单并完整游玩
+**Git Tag / Commit:** 基于 v0.5.1 / 8a3d7ca；本轮实现归入 v0.6.0
+
+### Student Prompt
+“帮我为ps5手柄做优化，完成到我用usb线连接手柄后就可以用手柄玩”。
+
+### Agent Response Summary
+接入浏览器标准 Gamepad 布局；左摇杆模拟移动、右摇杆转头，菜单支持方向选择、确认、返回和设置滑块。已有移动逻辑会归一化所有输入，现保留轻推幅度；键盘斜向仍限制最高速度。手柄拔出暂停，重新连接及菜单切换要求松开旧按键，避免误操作。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- × 落脚／接物、□ 交互／按住推门、○ 蹲行／取消、△ 全景、L1/R1 门速、Options 暂停；菜单 × 确认、○ 返回，保持少量情境按键。
+- 默认径向死区 16%，右摇杆使用非线性响应，提供独立转头速度和死区设置。只接受浏览器标准映射，不猜测未识别布局。
+- 网页首次暴露已连接手柄可能需在有焦点的页面按键；浏览器未允许声音时显示一次点击开启入口，不阻止无声游玩。
+
+### Development Action
+新增输入采样、边沿触发、菜单重复间隔与失焦保护；接入所有游戏动作、菜单和对应提示。增加模拟输入与设置检查。
+
+### Files / Mechanics Changed
+source/gamepad.js、source/main.js、source/engine.js、source/persistence.js、source/tests、game.html、assets/style.css。
+
+### Immediate Result
+52 项规则检查通过。正在进行浏览器模拟手柄验证；尚未进行实体 DualSense USB 试验，不能把模拟结果当作硬件认证。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+学生尚未反馈本轮实现。无需新设计决定，继续验证与发布；完成后等待学生连接自己的 USB 手柄体验识别与手感。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 20 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 手柄完整流程验证
+**Current Goal:** 验证从菜单到任务结算都能使用手柄完成
+**Git Tag / Commit:** v0.6.0
+
+### Student Prompt
+延续 USB PS5 手柄支持要求；学生中途补充“继续任务”。
+
+### Agent Response Summary
+52 项规则检查通过。Chrome 模拟 DualSense 检查菜单选图、设置滑块与复选框、开始续玩、模拟移动、转头、蹲行、视角、暂停、失焦、断开重连及键鼠切换。推门按住 □ 并用 L1/R1 调速，慢动作中 × 接住叉子、○ 取消后续搜索，以及结算进入下一夜均通过。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 使用浏览器模拟 Gamepad 数据验证输入分发，保留只读诊断，不向游戏暴露测试作弊入口。
+- 手柄焦点用暖黄色轮廓标明，设置面板可滚动；搜索物体上方使用中性“搜索”标签，具体按键留给情境提示。
+
+### Development Action
+完整模拟手柄游玩第一关：两扇门、四次成功落脚、一次接物、搜索、携设备返程，结果 100 分，分项与行为一致。查看菜单与设置截图；补充游戏页面、首页、过程页、README 和工作简报说明。
+
+### Files / Mechanics Changed
+手柄输入模块、主界面、设置存储、连续移动；网站三页、样式、构建产物、规则测试、README、brief.md 与开发日志。
+
+### Immediate Result
+本地通关及重点操作检查无脚本错误或资源失败。尚未实体连接 DualSense，USB 识别与真实手感不能由模拟输入确认。浏览器测试进程曾在完成后关闭等待，通关与断言结果已输出，后续为关闭步骤加入限时退出。资料更新脚本曾因输入编码解析失败，改用保存的 UTF-8 脚本后成功；未丢失源文件内容。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+学生要求继续完成任务，未提出新的设计变更。继续发布并检查正式网址；等待学生实际连接手柄后的体验反馈。

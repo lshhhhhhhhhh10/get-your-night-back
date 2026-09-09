@@ -79,8 +79,8 @@ export class Game{
   move(dx,dz,dt=1/60){
     if(!this.active||this.status!=='playing'||this.mode||this.stepTransit){this.velocity={x:0,z:0};return false;}
     dt=clamp(dt,0,.06);const mag=Math.hypot(dx,dz),speed=this.hidden?1.05:2.05,k=1-Math.exp(-(mag?24:36)*dt);
-    this.velocity.x+=((mag?dx/mag*speed:0)-this.velocity.x)*k;
-    this.velocity.z+=((mag?dz/mag*speed:0)-this.velocity.z)*k;
+    this.velocity.x+=((mag?dx/Math.max(1,mag)*speed:0)-this.velocity.x)*k;
+    this.velocity.z+=((mag?dz/Math.max(1,mag)*speed:0)-this.velocity.z)*k;
     if(Math.hypot(this.velocity.x,this.velocity.z)<.005){this.velocity={x:0,z:0};return false;}
     const p={x:this.player.x,z:this.player.z};
     if(this.canOccupy(p.x+this.velocity.x*dt,p.z))p.x+=this.velocity.x*dt;else this.velocity.x=0;
