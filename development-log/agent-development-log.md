@@ -672,3 +672,32 @@ source/gamepad.js、source/main.js、source/engine.js、source/persistence.js、
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 学生要求继续完成任务，未提出新的设计变更。继续发布并检查正式网址；等待学生实际连接手柄后的体验反馈。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 21 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** PS5 手柄版本上线
+**Current Goal:** 确认公开地址的控制器操作与网站说明一致
+**Git Tag / Commit:** 游戏 v0.6.0 / 0cf04fd；发布记录 v0.6.1
+
+### Student Prompt
+延续“USB 连接手柄后就可以用手柄玩”和“继续任务”的要求，完成发布。
+
+### Agent Response Summary
+原 GitHub Pages 游戏已更新为 v0.6.0。正式网址通过模拟 DualSense 检查：主菜单、地图选择、设置、开始续玩、移动与转头、蹲行、视角切换、Options 暂停、断线重连与失焦、推门及肩键调速、搜索与叉子接物、取消、结算进入下一夜，以及从主菜单选第三夜开局。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+发布代码、相对资源路径与三页说明，核对 Pages 构建完成。线上操作无脚本错误或资源请求失败，随后将过程页更新为实际上线状态。
+
+### Files / Mechanics Changed
+process.html、development-log/agent-development-log.md；仅记录发布状态，游戏代码仍为 v0.6.0。
+
+### Immediate Result
+https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.6.0 已生效。52 项规则检查与本地完整通关已通过，线上重点动作复测通过。验证使用标准 Gamepad 模拟数据，未实测实体 DualSense USB，不保证未被浏览器映射的设备、专有触觉或自适应扳机。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+学生尚未体验手柄版。等待学生用数据 USB 线连接自己的 DualSense，反馈浏览器识别、摇杆手感与按键提示；没有待批准的实现决策。
