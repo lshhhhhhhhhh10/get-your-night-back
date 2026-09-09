@@ -43,6 +43,14 @@ export class Soundscape{
       // 呼吸包络与低频颤音共同构成鼾声；警觉后不再触发。
       const o=ctx.createOscillator(),env=ctx.createGain(),f=ctx.createBiquadFilter(),lfo=ctx.createOscillator(),depth=ctx.createGain();o.type='sawtooth';o.frequency.value=73;lfo.frequency.value=23;depth.gain.value=9;lfo.connect(depth);depth.connect(o.frequency);f.type='lowpass';f.frequency.value=480;
       env.gain.setValueAtTime(.0001,t);env.gain.exponentialRampToValueAtTime(.15,t+.35);env.gain.exponentialRampToValueAtTime(.08,t+.9);env.gain.exponentialRampToValueAtTime(.0001,t+1.65);o.connect(f);f.connect(env);env.connect(g);o.start(t);lfo.start(t);o.stop(t+1.7);lfo.stop(t+1.7);o.onended=()=>{o.disconnect();lfo.disconnect();depth.disconnect();f.disconnect();env.disconnect();};burst(t+.10,1.6,.17,340,.8);
+    }else if(['floorPressure','floorSoft','floorCreak'].includes(kind)){
+      const loud=kind==='floorCreak',pressure=kind==='floorPressure',volume=loud?.23:pressure?.028:.065,duration=loud?1.05:pressure?.24:.48;
+      // 木板受力产生不均匀的滑音，与鞋底冲击、门轴声分开。
+      const o=ctx.createOscillator(),env=ctx.createGain(),f=ctx.createBiquadFilter();o.type='sawtooth';f.type='lowpass';f.frequency.value=loud?1600:950;
+      for(const[at,freq]of[[0,230],[.12,365],[.3,275],[.55,420],[1,155]])o.frequency.linearRampToValueAtTime(freq,t+at*duration);
+      env.gain.setValueAtTime(.0001,t);env.gain.exponentialRampToValueAtTime(volume,t+.025);env.gain.exponentialRampToValueAtTime(.0001,t+duration);
+      o.connect(f);f.connect(env);env.connect(g);o.start(t);o.stop(t+duration+.02);o.onended=()=>{o.disconnect();f.disconnect();env.disconnect();};burst(t,duration,volume*.8,650,5);
+      if(loud){note(t,95,.14,.13);burst(t+.2,.1,.10,1250,3);}
     }else if(['creak','doorCreak','doorSoft','bed'].includes(kind)){
       const soft=kind==='doorSoft',base=kind==='bed'?190:kind==='creak'?400:610,level=soft?.018:.105;
       const f=burst(t,soft?.55:.8,soft?.10:.28,base,7);f.frequency.exponentialRampToValueAtTime(base*.53,t+.6);

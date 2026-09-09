@@ -89,7 +89,7 @@ export class Game{
       const length=Math.hypot(dx,dz)||1,target={x:p.x+dx/length*.34,z:p.z+dz/length*.34};
       if(!this.canOccupy(target.x,target.z)){target.x=p.x;target.z=p.z;}
       this.mode={type:'step',target,tile,elapsed:0,continuous:true};this.velocity={x:0,z:0};
-      this.say('脚下是松动木板。亮区内按空格，轻轻落下；Esc 可以退开。','hint');return false;
+      this.emit('floorPressure',3);this.say('脚下是松动木板。亮区内按空格，轻轻落下；Esc 可以退开。','hint');return false;
     }
     const traveled=distance(p,this.player);this.player.x=p.x;this.player.z=p.z;this.footTile=tile;this.walked+=traveled;
     if(traveled>.00001)this.player.heading=Math.atan2(dx||this.velocity.x,dz||this.velocity.z);
@@ -114,8 +114,8 @@ export class Game{
     const success=Math.abs(this.pointer-.5)<=this.preset.width/2;
     if(m.type==='step'){
       this.mode=null;
-      if(m.continuous){this.stepTransit={from:{x:this.player.x,z:this.player.z},target:m.target,elapsed:0};this.footTile=m.tile;this.makeNoise(success?5:50,success?'轻轻落脚。':'吱呀——这块木板响了。');}
-      else this.land(m.target,success?5:50);
+      if(m.continuous){this.stepTransit={from:{x:this.player.x,z:this.player.z},target:m.target,elapsed:0};this.footTile=m.tile;this.makeNoise(success?5:50,success?'木板轻轻吱了一声。':'吱呀——这块木板响了。',success?'floorSoft':'floorCreak');}
+      else{this.player.x=m.target.x;this.player.z=m.target.z;this.footTile=`${Math.round(m.target.x)},${Math.round(m.target.z)}`;this.makeNoise(success?5:50,success?'木板轻轻吱了一声。':'吱呀——这块木板响了。',success?'floorSoft':'floorCreak');this.checkSpatialEvents();}
       if(success){this.safeSteps++;this.say('稳稳落下。再听听卧室里有没有变化。','good');}
     }else{this.vase=success?'caught':'fallen';this.mode=null;if(success){this.say('接住了。花瓶还好，你也是。','good');this.emit('catch',15);}else{this.makeNoise(90,'哐当！花瓶落地。先找掩体，仍有机会。');this.emit('crash',80);}}
   }

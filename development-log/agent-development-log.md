@@ -359,3 +359,36 @@ process.html、development-log/agent-development-log.md；仅补充发布记录�
 
 ### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
 本轮已完成并上线。等待学生实际体验扩大后的探索、0.25 秒识别难度、蹲行和声音；未代写满意度或阶段反思。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 11 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 家长角色显示修复与木板音效
+**Current Goal:** 家长同步 PEAK 模型、第一人称正常显示、踩木板有吱声
+**Git Tag / Commit:** v0.3.2（基于 v0.3.1 / 9bf452d）
+
+### Student Prompt
+家长建模也和 PEAK 模型同步，修复第一人称下家长模型无法出现，增加踩到地板时的吱呀声。
+
+### Agent Response Summary
+发现家长渲染错误复用了地面二维遮挡：矮家具会使整个家长被隐藏，而非只挡住身体下半部分。第一人称改由实际几何深度处理遮挡，全景保留隔墙信息限制。家长改用附件角色，独立骨骼、睡姿与巡查动作。成功踩松动木板原来被映射到普通脚步声，现补为轻微木板吱声，并区分受力与失误音色。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+- 家长复用已转换的附件第三个角色，放大 12% 并略调紫色服装，以区分玩家；不另外引入来源不明的模型。
+- 家长睡觉时在床上显示，准备起身和巡查使用对应姿态；手电开启真实阴影，减少穿墙照亮。
+- 松动地板受力提示不额外增加警觉；成功/失误的噪声 5 / 50 保持原值，只完善声音对应关系。
+
+### Development Action
+修改家长模型实例、姿态、可见性与阴影；新增 floorPressure、floorSoft、floorCreak 音色与触发映射；更新模型来源、README、简报和过程页。
+
+### Files / Mechanics Changed
+source/main.js、source/engine.js、source/audio.js、source/tests/floor-sound.test.js、构建资源、assets/models/README.md、assets/models/provenance.json、README.md、brief.md、三页版本路径与过程页、开发日志。
+
+### Immediate Result
+30 项规则检查通过。用明确的存档测试场景实际查看：第一人称中家长头部露在扶手椅上方，睡姿位于床上，实墙仍遮住家长；视角切换后显示正常。真实按键踏上松动木板并成功落脚，确认两段对应音效触发，浏览器无脚本错误。音频渲染中失误吱声 RMS 明显高于成功短吱声，均未削波。
+
+测试中发现加载完成前读取新调试字段会抛空值错误，已补保护。测试脚本切换存档场景时曾被页面退出自动保存覆盖，导致后续场景仍是前一个位置；调整测试隔离后重跑通过，未将该脚本问题误报为睡姿正常。
+
+### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
+修改已完成本地验证，接下来发布并复查；尚未收到学生对新版家长和木板声音的实际反馈，不代写认可。

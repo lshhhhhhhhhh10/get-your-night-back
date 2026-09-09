@@ -42,5 +42,9 @@
       "name": "Scarft 3",
       "vertices": 98
     }
-  ]
+  ],
+  "runtimeRoles": {
+    "player": "Character 3, original runtime scale",
+    "parent": "Same supplied Character 3, scale 1.12, purple clothing tint, independent skeleton and sleep/patrol poses"
+  }
 }
