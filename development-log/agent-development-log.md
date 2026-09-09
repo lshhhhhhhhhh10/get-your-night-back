@@ -5,7 +5,7 @@ Student / Team: Daniel
 Original Life Experience: 夜间取回被家长藏起的电子设备
 Core Emotion: 紧张、克制与生活喜剧感（来自简报）
 Core Mechanic: 观察环境、落脚时机、门速调节、搜索、掩体与接住物件
-Current Game Idea: 借便条寻找设备、利用环境声与道具引诱，处理来电后安全返回卧室；持续被识别才失败
+Current Game Idea: 借便条寻找设备、利用环境声与道具引诱，安抚或引开跟随的家猫，处理来电后安全返回卧室；持续被识别才失败
 Current Graph / Data Structure Summary: 线索→搜索选择；动作噪声 × 环境掩护→听到的 H→警觉 A→父母状态→反馈→调整；声源道具改变调查位置，来电新增可静音声源
 AI Agent Used: Codex
 Development Period: 2026-09-09 起
@@ -979,3 +979,32 @@ source/cat.js、cat-model.js、engine.js、main.js、audio.js；game.html 与样
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 无待确认的实施决定，继续公开发布和线上检查。之后等待学生体验猫的跟随、蹭腿、玩具和花瓶事件，反馈是否有生活感、是否打扰探索。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 31 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 家猫版本上线
+**Current Goal:** 确认公开版本的猫与交互正常
+**Git Tag / Commit:** 游戏 v0.9.0 / 9eccede；上线记录 v0.9.1
+
+### Student Prompt
+延续增加家里的猫及其交互行为的要求，完成上线。
+
+### Agent Response Summary
+家猫已发布到原游戏网址。正式版本复测跟随蹭腿、安抚与呼噜、Q / R2 玩具引走、玩具进度恢复、起跳前安抚和投球打断、接花瓶成功、失手声音与暂停。网站介绍和猫的实景图片同步生效。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+确认 Pages 构建对应 9eccede，在实际公开地址以键鼠与模拟 PS5 操作验证猫相关流程；检查桌面和窄屏面板，核对首页、过程页及新增图片。补充上线状态和日志顶部的当前游戏概述。
+
+### Files / Mechanics Changed
+process.html、development-log/agent-development-log.md；本条仅记录发布结果，游戏仍为 v0.9.0。
+
+### Immediate Result
+https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.9.0 已生效。线上检查无脚本或资源错误；本地三关完整搜索返程和 80 项规则检查通过。实体手柄、猫的互动频率及喜剧体验仍需要学生试玩评价。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+没有待批准的实施步骤。等待学生体验猫的建模、跟随与玩具互动，反馈是否自然、有趣或过于频繁；未替学生撰写阶段反思。
