@@ -2,6 +2,12 @@
 
 从夜间取回设备的生活经验出发，学习观察地板、门轴与父母状态的低多边形 3D 浏览器游戏。设计：Daniel；实现协作：Codex。
 
+## 在线游玩
+
+- 项目首页：https://lshhhhhhhhhh10.github.io/get-your-night-back/
+- 直接游戏：https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html
+- 公开仓库：https://github.com/lshhhhhhhhhh10/get-your-night-back
+
 ## 运行
 
 静态成品已放在仓库根目录，无需安装依赖即可通过 GitHub Pages 游玩。

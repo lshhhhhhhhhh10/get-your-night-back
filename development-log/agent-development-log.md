@@ -116,3 +116,37 @@ source/engine.js、source/main.js、source/tests/engine.test.js、assets/style.c
 
 ### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
 学生尚未进行首版试玩或表达反思；等待其对操作学习成本、风格、观察判断和总时长的实际反馈。上线已在本轮明确授权。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 04 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 公开发布与线上验证完成
+**Current Goal:** 将实测成品上线，并同步真实测试记录
+**Git Tag / Commit:** 游戏首版 v0.1.0 / 26010b8249bf468e23e54bf06bd09fa8c79529fb；本条与文档收尾保存在 v0.1.1
+
+### Student Prompt
+完成并上线游戏；原始请求要求 GitHub Pages 公开展示、相对链接、持续更新网站和开发日志。
+
+### Agent Response Summary
+按用户已给出的发布授权创建独立公开仓库，启用 main 根目录的 GitHub Pages 与 HTTPS，推送经过验证的成品和源代码。提交使用 GitHub 隐私邮箱，不公开个人邮箱。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+发布到 https://lshhhhhhhhhh10.github.io/get-your-night-back/ ，在真实公开地址重复关键输入测试，并将成功结果写回过程页及 README。未发布本地临时测试目录或 node_modules。
+
+### Files / Mechanics Changed
+README.md、process.html、development-log/agent-development-log.md；GitHub 仓库与 Pages 设置。游戏源码和构建资源与已验证首版一致。
+
+### Website Update
+过程页标明已上线和实际线上检查范围；README 加入正式首页、直接游玩与仓库地址。
+
+### Immediate Result
+GitHub Pages 状态 built，HTTPS 已启用，首页和游戏脚本均 HTTP 200。1920×1080 Chrome 在线实测第一关约 25.7 秒通关、第二关约 48.9 秒通关、第三关故意暴露在约 38.6 秒被识别后失败；重试清空设备、警觉、门和物件状态。首页→过程页导航通过，无 JavaScript 错误或资源请求失败。第三关完整成功路线此前本地验证约 67 秒。以上均为熟练自动操作，不是人类平均时长；约五分钟仍需真人校准。
+
+版本差异格式检查曾提示第三方构建代码与原始许可证中的空格格式，不涉及手写项目文件或运行错误；保持第三方原文。
+
+### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
+开发与上线已完成。等待学生打开成品试玩，对操作、视觉听觉和总时长提出反馈；没有把尚未收到的评价写成学生认可。学生尚未要求阶段反思，因此未代写 Reflection 或 Required Student Reflection。
