@@ -327,3 +327,35 @@ source/engine.js、source/main.js、source/audio.js、source/tests/、README.md�
 
 ### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
 等待新版上线后的学生实际探索与聆听反馈，尤其是更短识别窗口是否合适；未代写学生认可或反思。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 10 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 扩建版上线复核
+**Current Goal:** 确认公开网址提供经过验证的当前游戏
+**Git Tag / Commit:** 游戏 v0.3.0 / ace47e0；发布记录 v0.3.1
+
+### Student Prompt
+延续当前修改与既有上线授权，在原公开项目交付扩建、蹲行、难度及音乐音效。
+
+### Agent Response Summary
+GitHub Pages 已完成构建。公开地址复测第一关扩建后的搜索返程，包括两扇门和书房藏点；在约 93 秒自动操作游戏时间内成功，没有脚本报错。此值不代表真人探索平均时长。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+线上验证旧存档保留第三关但不迁移设备、新版蹲行位置与视角恢复、音乐音量保存、局部小地图裁切与全景切换。实际声音事件包括音乐、鼾声、蹲行脚步、门轴、门锁、床响与翻找。首页至过程页导航正确，显示本轮第五阶段时间线。
+
+### Files / Mechanics Changed
+process.html、development-log/agent-development-log.md；仅补充发布记录，不改变已测试的游戏源码。
+
+### Website Update
+过程页标记 v0.3.0 已上线并补充线上复核范围。
+
+### Immediate Result
+公开资源正常加载，线上回归无资源请求失败或 JavaScript 错误。游戏继续使用原网址，带 v=0.3.0 的链接可直接打开新版。音乐、环境与提示音在设置中独立调整。
+
+### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
+本轮已完成并上线。等待学生实际体验扩大后的探索、0.25 秒识别难度、蹲行和声音；未代写满意度或阶段反思。
