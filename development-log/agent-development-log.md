@@ -392,3 +392,35 @@ source/main.js、source/engine.js、source/audio.js、source/tests/floor-sound.t
 
 ### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
 修改已完成本地验证，接下来发布并复查；尚未收到学生对新版家长和木板声音的实际反馈，不代写认可。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 12 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 家长与木板声音修复上线
+**Current Goal:** 确认正式网址中的修复有效
+**Git Tag / Commit:** 游戏 v0.3.2 / fb8021c；发布记录 v0.3.3
+
+### Student Prompt
+延续本轮家长建模、第一人称显示和踩地板吱声修改，更新原公开游戏。
+
+### Agent Response Summary
+GitHub Pages 已完成构建；使用公开地址复测与本地相同的隔离存档场景和实际落脚按键。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+线上确认第一人称扶手椅后仍能显示家长头部，视角切换后正常，睡姿可见，实墙仍遮挡；踏上松动地板并成功落脚，分别触发 floorPressure 和 floorSoft。家长角色报告为 PEAK 实例，无 JavaScript 错误。
+
+### Files / Mechanics Changed
+process.html、development-log/agent-development-log.md；仅同步发布结果，游戏代码不再变化。
+
+### Website Update
+过程页新增阶段标记为已上线并验证，记录线上检查范围。
+
+### Immediate Result
+修复已在 https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.3.2 生效。本轮没有改变现有存档版本或 0.25 秒识别规则。
+
+### Student Follow-up (REQUIRED — do NOT write "TBD" or leave blank)
+等待学生再次体验家长可见性及木板声音。尚无本版满意度或阶段反思反馈，不代写认可。
