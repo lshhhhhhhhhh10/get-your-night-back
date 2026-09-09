@@ -582,3 +582,32 @@ source/performance.js、source/incidents.js、source/cinematic.js、source/engin
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 学生尚未对本轮完成版本反馈。按已有授权发布并复查正式网址；随后等待学生体验评分标准、门声、窄时间区间和事件节奏。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 18 — Raw Interaction Log
+
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 评分与慢动作事件上线
+**Current Goal:** 确认公开游戏中的新增机制与资料有效
+**Git Tag / Commit:** 游戏 v0.5.0 / 330416a；发布记录 v0.5.1
+
+### Student Prompt
+延续本轮评分、门声、地板难度和场景意外要求，更新原公开游戏。
+
+### Agent Response Summary
+GitHub Pages 已发布新版本。在线实际按键完成第一关，并触发、接住笔筒后继续搜索；评分与实际行为记录一致。独立场景复测叉子、笔筒、铁盒、花瓶，以及暂停、刷新、超时落地和取消搜索。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None.
+
+### Development Action
+确认六个录音文件加载，无音频请求失败。公开游戏的近景结束后恢复原视角和搜索；首页实际图像与制作过程导航正常。同步过程页上线状态。
+
+### Files / Mechanics Changed
+process.html、development-log/agent-development-log.md；仅同步发布记录，游戏仍为 v0.5.0。
+
+### Immediate Result
+https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.5.0 已生效。线上玩法与评分验证通过，无资源或 JavaScript 错误。首页图片采用延迟加载，第一次测试在滚到图片后立即读取解码状态过早；改为等待图片完成后确认显示正常，不需要修改产品文件。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+等待学生实际体验本版评分、门声音色、时间区间和慢动作事件。尚未收到本版认可或反思，不替学生填写。
