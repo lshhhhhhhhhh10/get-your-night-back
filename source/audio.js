@@ -1,4 +1,4 @@
-// 原创的稀疏拨弦/钟琴夜曲。无采样、远程文件或音乐版权依赖。
+// 原创拨弦/钟琴夜曲；门和金属落地使用本地 CC0 实录，来源见 assets/audio/README.md。
 export const MUSIC_BEAT=.625;
 export const MELODY=[74,0,77,81,0,77,72,0,70,0,74,77,0,74,69,0,67,0,70,74,0,70,65,0,69,0,72,76,0,72,73,0];
 const hz=n=>440*2**((n-69)/12);
@@ -17,10 +17,19 @@ export class Soundscape{
     this.ctx=ctx;this.settings=settings;this.master=ctx.createGain();this.effects=ctx.createGain();this.music=ctx.createGain();this.ambience=ctx.createGain();
     this.master.gain.value=settings.master;this.effects.gain.value=settings.effects;this.music.gain.value=0;this.ambience.gain.value=0;
     this.effects.connect(this.master);this.music.connect(this.master);this.ambience.connect(this.master);this.master.connect(ctx.destination);
-    this.stats={musicNotes:0,effects:{},lastKind:''};this.active=false;this.tension=false;this.step=0;this.next=ctx.currentTime+.05;
+    this.stats={musicNotes:0,effects:{},lastKind:'',samplesReady:0,sampleErrors:[]};this.samples={};this.ready=this.loadSamples();this.active=false;this.tension=false;this.step=0;this.next=ctx.currentTime+.05;
     this.noise=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);const data=this.noise.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
     const wind=ctx.createBufferSource(),filter=ctx.createBiquadFilter();wind.buffer=this.noise;wind.loop=true;filter.type='lowpass';filter.frequency.value=170;wind.connect(filter);filter.connect(this.ambience);wind.start();
     this.apply();this.timer=setInterval(()=>this.schedule(),100);this.schedule();
+  }
+  async loadSamples(){
+    const files={handle:'door-handle.wav',hinge:'door-hinge.wav',bump:'door-bump.wav',latch:'door-latch.wav',drawer:'drawer.wav',metal:'metal-drop.wav'};
+    await Promise.all(Object.entries(files).map(async([id,file])=>{try{const response=await fetch(new URL(`assets/audio/${file}`,document.baseURI));if(!response.ok)throw Error(response.status);this.samples[id]=await this.ctx.decodeAudioData(await response.arrayBuffer());this.stats.samplesReady++;}catch{this.stats.sampleErrors.push(file);}}));
+  }
+  sample(id,bus,time,volume,rate=1,offset=0,maxDuration=2){
+    const buffer=this.samples[id];if(!buffer)return false;const source=this.ctx.createBufferSource(),gain=this.ctx.createGain();source.buffer=buffer;source.playbackRate.value=rate;
+    const duration=Math.min(maxDuration,buffer.duration-offset),real=duration/rate;gain.gain.setValueAtTime(.0001,time);gain.gain.exponentialRampToValueAtTime(volume,time+.012);gain.gain.setValueAtTime(volume,time+Math.max(.015,real-.05));gain.gain.linearRampToValueAtTime(.0001,time+real);
+    source.connect(gain);gain.connect(bus);source.start(time,offset,duration);source.onended=()=>{source.disconnect();gain.disconnect();};return true;
   }
   apply(){const t=this.ctx.currentTime;this.master.gain.setTargetAtTime(this.settings.master,t,.04);this.effects.gain.setTargetAtTime(this.settings.effects,t,.04);this.music.gain.setTargetAtTime(this.settings.music*(this.tension?.40:.72)*(this.active?1:.5),t,.3);this.ambience.gain.setTargetAtTime(this.settings.ambience*.06,t,.1);}
   state(active,parent){const tension=['warning','checking','returning'].includes(parent);if(active!==this.active||tension!==this.tension){this.active=active;this.tension=tension;this.apply();}}
@@ -36,7 +45,10 @@ export class Soundscape{
     g.gain.value=(blocked?.60:1)/(1+dist*.09);g.connect(pan);pan.connect(this.effects);this.stats.lastKind=kind;this.stats.effects[kind]=(this.stats.effects[kind]||0)+1;
     const burst=(time,duration,volume,f,q,type)=>this.noiseBurst(g,time,duration,volume,f,q,type);
     const note=(time,f,duration,level,type='sine')=>tone(ctx,g,time,f,duration,level,type);
-    if(['step','crouchStep','parentStep','tileStep'].includes(kind)){
+    const sampled=kind==='doorHandle'?this.sample('handle',g,t,.7,1,0,.7):kind==='doorSoft'?this.sample('hinge',g,t,.18,.94,.15,.64):kind==='doorCreak'?this.sample('hinge',g,t,.66,.75,.10,.67):kind==='doorBump'?this.sample('bump',g,t,.8,.92):kind==='latch'?this.sample('latch',g,t,.55,1.05,.32,.32):kind==='metalDrop'?this.sample('metal',g,t,.8,.93):kind==='search'?this.sample('drawer',g,t,.22,.9,0,.55):false;
+    if(sampled){/* 真实把手、门轴、木门撞击和金属碰撞，不叠加旧电子滑音。 */}
+    else if(kind==='pencilDrop'){for(let i=0;i<5;i++){note(t+i*.07,320+i*73,.08,.055);burst(t+i*.06,.09,.1,850+i*120,1);}}
+    else if(['step','crouchStep','parentStep','tileStep'].includes(kind)){
       const soft=kind==='crouchStep',parent=kind==='parentStep',tile=kind==='tileStep',volume=soft?.045:parent?.20:.12;
       note(t,parent?75:tile?175:115,.14,volume);burst(t,.13,volume*1.6,tile?1500:380,.7);burst(t+.075,.08,volume*.65,750,.8);
     }else if(kind==='snore'){
