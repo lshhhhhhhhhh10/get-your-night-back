@@ -7,10 +7,20 @@ export function createFurniture(f){
   const box=(a,b,e,col,x=0,y=b/2,z=0)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(a,b,e),material(col));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;g.add(m);return m;};
   const cyl=(rt,rb,hh,col,x,y,z,n=12)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,hh,n),material(col));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;g.add(m);return m;};
   const legs=(top=h-.09)=>{for(const x of[-w*.39,w*.39])for(const z of[-d*.36,d*.36])box(.065,top,.065,'#514b52',x,top/2,z);};
-  const book=(x,y,z,color)=>box(.075,.21,.24,color,x,y+.105,z);
+  const book=(x,y,z,color)=>{const b=box(.075,.21,.24,color,x,y+.105,z);(g.userData.books??=[]).push(b);return b;};
   if(['cabinet','kitchen','tv'].includes(f.type)){
-    const bh=f.type==='tv'?.58:h;box(w,bh-.14,d,c,0,(bh-.14)/2+.10);box(w,.055,d,'#c5af91',0,bh-.025);for(const x of[-w*.39,w*.39])for(const z of[-d*.34,d*.34])box(.08,.12,.08,'#514b52',x,.06,z);
-    const count=Math.max(1,Math.round(w/.65));for(let i=0;i<count;i++){const x=-w/2+(i+.5)*w/count;box(w/count-.04,bh-.25,.018,c,x,bh/2+.015,d/2+.009);box(.12,.025,.025,'#dfc694',x,bh*.7,d/2+.027);box(w/count-.07,.014,.012,'#5c5860',x,bh*.46,d/2+.021);}
+    const bh=f.type==='tv'?.58:h;box(w,bh-.14,.055,c,0,(bh-.14)/2+.10,-d/2+.028);for(const x of[-w/2+.03,w/2-.03])box(.06,bh-.14,d,c,x,(bh-.14)/2+.10);box(w,.06,d,c,0,.14);box(w,.055,d,'#c5af91',0,bh-.025);for(const x of[-w*.39,w*.39])for(const z of[-d*.34,d*.34])box(.08,.12,.08,'#514b52',x,.06,z);
+    const count=Math.max(1,Math.round(w/.65));g.userData.drawers=[];g.userData.contents=[];
+    for(let i=0;i<count;i++){const x=-w/2+(i+.5)*w/count,drawer=new THREE.Group();g.add(drawer);g.userData.drawers.push(drawer);
+      const add=(...args)=>{const m=box(...args);drawer.attach(m);return m;};
+      box(w/count-.04,bh*.24,.025,c,x,bh*.27,d/2);box(w/count-.04,bh*.23,.025,c,x,bh*.845,d/2);
+      add(w/count-.04,bh*.30,.035,c,x,bh*.55,d/2+.009);add(.12,.025,.045,'#dfc694',x,bh*.56,d/2+.04);
+      add(w/count-.08,.035,d-.1,'#705c4d',x,bh*.42,0);
+      for(const side of[-1,1])add(.025,bh*.24,d-.1,'#9b8066',x+side*(w/count-.1)/2,bh*.54,0);
+      for(let j=0;j<3;j++){const item=add(w/count*.60,.025,.24,['#d6c9ad','#859da8','#a28c99'][j],x+(j-1)*.04,bh*.45+j*.026,0);g.userData.contents.push({item,y:item.position.y,z:item.position.z});}
+    }
+    if(f.search){const lock=new THREE.Group();lock.position.set(0,bh*.64,d/2+.045);g.add(lock);const metal=new THREE.MeshStandardMaterial({color:'#bba576',metalness:.5,roughness:.4});const body=new THREE.Mesh(new THREE.BoxGeometry(.12,.13,.055),metal);lock.add(body);const loop=new THREE.Mesh(new THREE.TorusGeometry(.05,.012,5,12,Math.PI),metal);loop.position.y=.07;lock.add(loop);g.userData.padlock=lock;}
+
     if(f.type==='tv'){box(w*.83,.71,.075,'#30394c',0,1.22,0);box(w*.75,.60,.009,'#455c70',0,1.22,.043);box(.07,.28,.07,'#343846',0,.77,0);box(.48,.045,.26,'#343846',0,.62,0);}
     if(f.type==='kitchen'){box(.68,.035,.49,'#526b77',w*.25,h+.015,-.06);box(.57,.012,.38,'#8eacb1',w*.25,h+.035,-.06);cyl(.026,.026,.25,'#c4d0cb',w*.25,h+.14,-d*.32);box(.026,.028,.2,'#c4d0cb',w*.25,h+.25,-d*.22);box(.36,.026,.27,'#c9a876',-w*.28,h+.013,.02);}
   }else if(f.type==='bed'){
@@ -33,4 +43,11 @@ export function createFurniture(f){
     cyl(w*.48,w*.33,.34,'#b18c78',0,.17,0);for(let i=0;i<4;i++){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),material(i%2?'#648e83':'#507c7c'));leaf.scale.set(.47,2.4,.60);leaf.position.set(Math.sin(i*1.57)*.09,.70,Math.cos(i*1.57)*.09);leaf.castShadow=true;g.add(leaf);}
   }
   return g;
+}
+
+export function animateFurniture(g,time,active){
+ if(!g)return;const open=active?Math.min(1,time/.85)*.42:0;
+ for(const drawer of g.userData.drawers||[])drawer.position.z=open;
+ for(const {item,y,z}of g.userData.contents||[]){item.position.y=y+(active?Math.max(0,Math.sin(time*5+y*35))*.065:0);item.rotation.y=active?Math.sin(time*4+y*25)*.12:0;}
+ (g.userData.books||[]).forEach((b,i)=>{const pull=active?Math.max(0,Math.sin(time*3-i*.65)):0;b.position.z=pull*.28;b.rotation.x=pull*-.24;});
 }

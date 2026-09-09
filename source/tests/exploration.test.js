@@ -13,7 +13,7 @@ test('扩建地图中全部候选藏点可由玩家抵达并原路返程',()=>{
 });
 test('蹲行可在任何位置开启，可以移动、开门和搜索',()=>{
   const g=new Game();g.start();g.hide();assert.equal(g.hidden,true);for(let i=0;i<30;i++)g.move(1,0,1/60);assert.ok(g.player.x>3.4&&g.player.x<3.6);
-  g.player={x:3,z:11};g.action();assert.equal(g.mode.type,'door');g.cancel();g.player={x:16,z:1.8};g.action();assert.equal(g.mode.type,'search');
+  g.player={x:3,z:11};g.action();assert.equal(g.mode.type,'door');g.cancel();g.player={x:16,z:1.8};g.night.unlocked=['study-search'];g.action();assert.equal(g.mode.type,'search');
 });
 test('蹲行比站立更慢且更安静，离开家具遮挡仍会被看见',()=>{
   const a=new Game(),b=new Game();for(const g of[a,b]){g.start();g.player={x:3,z:12};}b.hide();

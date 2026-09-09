@@ -37,12 +37,12 @@ export const FURNITURE=[
   {id:'back-console',type:'cabinet',x:21,z:17.15,w:1.65,d:.65,h:.85,yaw:Math.PI,minLevel:1,color:'#9f8975'}
 ];
 const cache=new Map();
-export function furnitureFor(level){if(!cache.has(level))cache.set(level,FURNITURE.filter(f=>(f.minLevel??0)<=level&&(level>0||f.x+Math.max(f.w,f.d)/2<17.51)));return cache.get(level);}
+export function furnitureFor(level){if(!cache.has(level))cache.set(level,FURNITURE.filter(f=>(f.minLevel??0)<=level&&(level>0||f.x+(Math.abs(Math.cos(f.yaw||0))*f.w+Math.abs(Math.sin(f.yaw||0))*f.d)/2<17.51)));return cache.get(level);}
 export function localPoint(p,f){const a=f.yaw||0,c=Math.cos(a),s=Math.sin(a),x=p.x-f.x,z=p.z-f.z;return{x:x*c-z*s,z:x*s+z*c};}
 export function circleHits(p,r,f){const q=localPoint(p,f),dx=Math.max(Math.abs(q.x)-f.w/2,0),dz=Math.max(Math.abs(q.z)-f.d/2,0);return dx*dx+dz*dz<r*r;}
 export function doorShape(d){const yaw=d.progress*Math.PI*.49;return{id:'door',x:d.x-.47+.47*Math.cos(yaw),z:d.z-.47*Math.sin(yaw),w:.94,d:.12,h:2.16,yaw};}
 export const SEARCH_IDS=[['living-search','study-search'],['living-search','study-search','kitchen-search','storage-search','laundry-search']];
-export function searchSpots(level){return SEARCH_IDS[level===0?0:1].map(id=>{const f=FURNITURE.find(f=>f.id===id);return[f.x,f.z,f.name,id];});}
+export function searchSpots(level){return [...SEARCH_IDS[level===0?0:1],'study-shelf'].map(id=>{const f=FURNITURE.find(f=>f.id===id);return[f.x,f.z,f.name,id];});}
 export const OPENINGS=[
   [3,10,'x','卧室'],[11,10,'x','后走廊'],[7,8,'x','父母房间'],[11,6,'x','旧木门'],
   [14,3,'z','书房'],[14,9,'z','储物区'],[14,12,'z','储物区'],[14,16,'z','后走廊'],

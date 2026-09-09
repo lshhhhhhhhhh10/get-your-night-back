@@ -1008,3 +1008,45 @@ https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.9.0 已生效
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 没有待批准的实施步骤。等待学生体验猫的建模、跟随与玩具互动，反馈是否自然、有趣或过于频繁；未替学生撰写阶段反思。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 32 — Raw Interaction Log
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 近景跟随、解谜探索与角色更新
+**Current Goal:** 实现跟随视角、三套角色、翻找动作、逐关柜锁和下载猫模型
+**Git Tag / Commit:** 基于 dc3a2c1；目标 v0.10.0
+### Student Prompt
+增加近景第三人称跟随；网上寻找奶龙、奶蛙、奶鼠全身参考并加入皮肤；解谜后获得线索；翻找书柜与抽屉时拉近镜头并具体翻动；部分柜子需要开锁，三关递进；使用现成模型美化猫。学生进一步确认奶蛙、奶鼠采用奶白色圆滚滚造型。
+### Agent Response Summary
+查找角色图片与 CC0 猫模型。增加三种视角、线索整理与图案/数字锁、可活动抽屉和翻书动作。
+### AI Design Assumptions (REQUIRED — do not skip)
+V / 手柄 R3 切第一与第三人称，M / △ 保留全景。读题暂停、翻找时世界继续，允许随时取消。第一关图案顺序；第二关结合两处信息换数字；第三关加书架夹页并倒序解锁。皮肤为参考外形的自制游戏改编，不声称官方模型。奶蛙搜索图为黄色，但以学生确认的奶白色变体制作。
+### Development Action
+正在修改逻辑与交互界面，下载 Quaternius 的 CC0 猫模型；测试和发布尚未完成。
+### Files / Mechanics Changed
+source/puzzles.js、engine.js、main.js、night-tools.js、layout.js、persistence.js、game.html；后续包含人物、猫、翻找模型与网站文档。
+### Immediate Result
+已确认引用猫模型的 CC0 许可，完成首轮逻辑修改；尚未验证可玩性。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+学生已确认奶白色圆滚滚造型。无待批准的实现步骤；完成后等待学生试玩镜头、解谜难度和角色外观。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 33 — Raw Interaction Log
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 完成实现与发布前验证
+**Current Goal:** 验证近景、解谜、翻找、角色和网站一致
+**Git Tag / Commit:** v0.10.0
+### Student Prompt
+继续本轮近景镜头、指定皮肤、谜题柜锁、翻找动画和猫模型更新。
+### Agent Response Summary
+完成三种视角切换、九套衣柜外观、三处解谜线索、逐关递进柜锁与保存；抽屉内部、滑出和翻动、书架抽书、双手特写已接入。选用更圆润的 Quaternius Cat Blob 替换首选的方块猫，加入小脚、尾巴、柔和材质，保留原有行为。
+### AI Design Assumptions (REQUIRED — do not skip)
+跟随镜头右肩偏移 0.38、常规距离 2.5，避墙时缩短；太近会淡化人物。搜索特写保留听觉状态和取消入口。解锁后自动拉开抽屉开始六秒搜索；读题暂停，不按答题时间评分。猫新增足尾属于模型改编，不属于下载原件。
+### Development Action
+修复旋转书架在第一关被误隐藏、肩后人物遮住视野、抽屉正面挡住内部、未打开柜锁仍显示充电微光，以及不同近景的续玩记忆。更新实际截图、首页、过程页、README、简报补充和素材出处。
+### Files / Mechanics Changed
+source 的镜头、谜题、翻找、人物和猫模块；game.html、assets/style.css、三张角色卡片、猫 GLB、网站截图与四份项目文档。无新增依赖或付费服务。
+### Immediate Result
+86 项规则检查与正式构建通过。浏览器验证三关谜题、错误答案不记线索、读题暂停、柜锁证据要求、解锁后翻找与静音、书架夹页、键鼠与模拟 PS5、换肤保存、猫全部行为、页面资源与相对路径、桌面和窄屏。前两关实际键盘完整通关；第三关各交互链通过，但几次直线路线测试被正常巡查发现，正在检查绕行路线。没有为了测试降低家长难度。实体 PS5 未连接本机，不声称完成硬件实测。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+没有待批准的实施步骤。准备在原 GitHub Pages 发布并复查；等待学生体验改编外观、镜头和解谜节奏，不代写学生感受。

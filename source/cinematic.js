@@ -27,7 +27,7 @@ export class IncidentCamera{
   return g;
  }
  render(renderer,mode,aspect){
-  this.cat.visible=!!mode.noiseSource;if(this.cat.visible){updateCatModel(this.cat,{x:-.85,z:-.2,state:'prepare',heading:.35,route:[]},mode.elapsed);this.cat.position.y=.085;this.cat.userData.head.rotation.x=-.35;}
+  this.cat.visible=!!mode.noiseSource;if(this.cat.visible){updateCatModel(this.cat,{x:-.85,z:-.2,state:'prepare',heading:.35,route:[]},mode.elapsed);this.cat.position.y=.085;if(this.cat.userData.head)this.cat.userData.head.rotation.x=-.35;}
   const event=INCIDENTS[mode.incidentId||'vase'],reaction=mode.type==='reaction',t=reaction?1:Math.min(1,mode.elapsed/CATCH_DURATION);
   this.table.material=this.mat(event.kind==='fork'?'#a1b7ac':event.kind==='tin'?'#8c8390':'#aa8b70');
   for(const[k,g]of this.props){g.visible=k===event.kind;if(!g.visible)continue;

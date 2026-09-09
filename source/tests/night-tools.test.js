@@ -4,9 +4,6 @@ import {Game,distance} from '../engine.js';
 import {CLUES,LURES,maskAt,clueText} from '../night-tools.js';
 const tick=(g,s,input={})=>{for(let i=0;i<Math.ceil(s/.05);i++)g.tick(.05,input);};
 const call=()=>{const g=new Game();g.start();g.hasDevice=true;g.night.phone={state:'warning',timer:6,hold:0,armed:false,rings:0,lastCue:-1};return g;};
-test('三关两条线索可读取、记录且指向真实目标房间',()=>{
- for(let l=0;l<3;l++){const g=new Game(l);g.start();for(const c of CLUES){g.player={x:c.x,z:c.z+.75};assert.equal(g.toolNear()?.id,c.id);g.action();assert.ok(g.night.clues.includes(c.id));assert.equal(g.mode,null);}assert.match(clueText(l,'living-note'),new RegExp(['书房','储物','洗衣'][l]));assert.match(g.spots.find(s=>s.device).name,new RegExp(['书房','储物','洗衣'][l]));assert.equal(g.night.clues.length,2);}
-});
 test('便条不会抢走卧室门的交互，远处无法读取',()=>{const g=new Game();g.start();g.player={x:3,z:11};g.action();assert.equal(g.mode?.type,'door');g.cancel();g.player={x:6,z:11};assert.equal(g.toolNear(),undefined);});
 test('鼾声有短窗口，家长醒来不再提供掩护',()=>{const g=new Game();g.time=.2;g.lastSnore=0;assert.equal(maskAt(g)?.id,'snore');g.time=1.6;assert.equal(maskAt(g),null);g.time=.2;g.parent.state='alert';assert.equal(maskAt(g),null);});
 test('洗衣机只在附近和脱水区间提供掩护，三关都有实际洗衣机',()=>{const g=new Game(1);g.time=8;g.player={x:12,z:14};assert.equal(maskAt(g)?.id,'washer');g.player={x:3,z:3};assert.equal(maskAt(g),null);g.player={x:12,z:14};g.time=13;assert.equal(maskAt(g),null);g.time=8;g.level=0;assert.equal(maskAt(g)?.id,'washer');});

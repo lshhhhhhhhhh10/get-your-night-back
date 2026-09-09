@@ -19,3 +19,12 @@
 ## 家猫（v0.9.0）
 
 家猫由本项目 `source/cat-model.js` 的程序几何直接生成，未使用 PEAK 附件或下载其他游戏的猫模型。橘色身体、曲面条纹、圆头、耳朵、胡须、眼睛、四肢和分节尾巴均在代码中制作与驱动。没有新增 GLB 或贴图文件；场景和接花瓶特写共用这套模型。行为在 `source/cat.js` 中维护，声音在 `source/audio.js` 中合成。
+
+
+## v0.10.0：网络参考与现成猫模型
+
+- `quaternius-cat.glb`：Quaternius **Cat / Cat Blob**，页面 https://poly.pizza/m/2f54vbV0In 标示 Public Domain (CC0)。实际下载 https://static.poly.pizza/7ccb71fe-dabb-4a6f-a98a-8992bb5e6bc7.glb 。许可 https://creativecommons.org/publicdomain/zero/1.0/ 。文件保留原骨骼和九条动画；运行时调整至约 0.68 高并补自制小脚与尾巴。场景与花瓶特写共用它。选择过程中比较过另一只立方体猫，最终未采用。当前运行版本替代 v0.9 的程序橘猫；旧程序仅保留为初始化兼容。
+- 奶龙全身参考：官方角色介绍 https://www.nailoong.com/ipStar/Nailong/ ，以及 https://www.duitang.com/blog/?id=1353954971 的全身图片。圆黄身体、大眼睛、浅色肚皮、短四肢作为自制低多边形改编依据。
+- 奶蛙全身参考：https://www.naiwa.world/ 的 `assets/naiwa-standing.png`，图中为黄色网络变体，非官方角色授权。学生明确确认奶白色圆滚滚版本，因此模型改为奶白配色，圆眼、圆肚和短肢。
+- 奶鼠：搜索了奶鼠 / 奶蛙 / 全身，但未获得可验证为唯一角色原设的公开全身图片；用户确认奶白色圆滚形态后，制作大耳朵、圆肚和细尾巴的游戏改编。不把普通鼠图片冒称为奶鼠官方原设。三个模型均由 `source/milk-skins.js` 自制，不是从商业游戏提取或下载的官方人物模型。
+- 网页参考图不作为贴图或图片重新分发；九张衣柜缩略图均为游戏自身三维预览截图。CC0 只适用于注明的 Quaternius 猫资产，不覆盖其他角色 IP。

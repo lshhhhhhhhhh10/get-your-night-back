@@ -37,3 +37,14 @@
 @media(max-width:760px){.game-page .mission-panel{top:210px;left:12px;max-width:calc(100vw - 24px)}.game-page .game-tools{bottom:64px;right:12px}}
 
 #cat-panel{position:absolute;z-index:13;left:24px;bottom:90px;width:260px;background:#1b2b3fec;border:1px solid #cfb58780;border-radius:18px;padding:15px;box-shadow:0 6px 22px #0004}#cat-panel strong{font-size:14px;color:#edcc99}#cat-panel p{font-size:11px;color:#aebacc;margin:6px 0 12px}#cat-panel>div{display:flex;gap:8px}#cat-panel button{border:1px solid #d2b28166;border-radius:8px;padding:8px 10px;color:#f0d6a9;background:#344154;font-size:12px}#cat-panel button:disabled{opacity:.4}@media(max-width:760px){#cat-panel{left:12px;bottom:240px;width:230px;padding:12px}#cat-panel strong{font-size:13px}}
+
+/* A small, readable paper puzzle under the night light. */
+.puzzle-dialog{width:min(720px,94vw);max-height:90dvh;overflow:auto;border:1px solid #bd9b65;background:linear-gradient(145deg,#24344a,#142237);box-shadow:0 20px 100px #080d19;padding:clamp(22px,4vw,44px)}
+#puzzle-evidence{font-size:18px;line-height:1.8;color:#e2d9c8}#puzzle-notes{border-left:2px solid #d9b476;padding-left:16px;color:#bacadb;line-height:1.7}#puzzle-notes:empty{display:none}
+#puzzle-slots{min-height:54px;background:#0e1929;border-radius:10px;padding:16px;color:#f4d496;text-align:center;font-weight:700;font-size:20px}
+#puzzle-options{display:flex;flex-wrap:wrap;gap:10px}#puzzle-options button{padding:12px 20px;border:1px solid #738294;background:#344458;border-radius:8px;color:#f2eee4;font-size:18px}
+.puzzle-actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.puzzle-actions button{padding:12px 16px;border-radius:8px}.puzzle-dialog small{color:#aab8cc}#puzzle-feedback{color:#edcf92;min-height:1.5em}
+.skin-choices{max-height:80dvh;overflow:auto}.game-tools{flex-wrap:wrap}
+
+.search-active .listening-panel{visibility:visible}.search-active #incident-caption{top:88px;letter-spacing:2px}.search-active .subtitle-wrap{bottom:230px}.search-active .interaction-panel{bottom:54px}
+@media(max-width:760px){.search-active .listening-panel{display:none}.search-active .subtitle-wrap{bottom:275px}.search-active .interaction-panel{bottom:100px}}

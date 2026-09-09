@@ -5,8 +5,8 @@ import {SKINS,SKIN_KEY,readSkin,saveSkin,skinById} from '../skins.js';
 import {createSkinModel,disposeSkinModel,poseSkin} from '../skin-model.js';
 import {Game} from '../engine.js';
 const storage=()=>{const m=new Map();return {getItem:k=>m.get(k),setItem:(k,v)=>m.set(k,v)};};
-test('六个外观使用稳定标识与本地资源，未知与损坏选择回到默认',()=>{
- assert.equal(SKINS.length,6);assert.equal(new Set(SKINS.map(s=>s.id)).size,6);for(const s of SKINS)assert.ok(s.model.startsWith('assets/models/'));
+test('九个外观使用稳定标识与本地资源，未知与损坏选择回到默认',()=>{
+ assert.equal(SKINS.length,9);assert.equal(new Set(SKINS.map(s=>s.id)).size,9);for(const s of SKINS)assert.ok(s.model.startsWith('assets/models/'));
  const s=storage();for(const value of ['{bad',JSON.stringify({id:'missing'}),'null']){s.setItem(SKIN_KEY,value);assert.equal(readSkin(s),'scarf');}assert.equal(skinById('missing').id,'scarf');
 });
 test('外观保存独立于游戏进度，无效选择与不可用存储安全返回',()=>{

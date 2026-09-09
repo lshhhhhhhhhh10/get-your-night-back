@@ -1,6 +1,8 @@
+import {createMilkSkin} from './milk-skins.js';
 import * as THREE from 'three';
 import {clone} from 'three/addons/utils/SkeletonUtils.js';
 export function createSkinModel(template,id='scarf'){
+  if(['nailong','naiwa','naishu'].includes(id))return createMilkSkin(id);
   const root=new THREE.Group(),asset=clone(template);root.add(asset);root.userData.skinId=id;
   const ownedMaterial=color=>{const m=new THREE.MeshStandardMaterial({color,roughness:.9,flatShading:true});m.userData.skinOwned=true;return m;};
   const prop=(geometry,color,x,y,z)=>{const m=new THREE.Mesh(geometry,ownedMaterial(color));m.userData.skinOwned=true;m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;root.add(m);return m;};
