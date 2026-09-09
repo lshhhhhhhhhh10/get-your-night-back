@@ -4,9 +4,9 @@ Project Title: Get Your Night Back
 Student / Team: Daniel
 Original Life Experience: 夜间取回被家长藏起的电子设备
 Core Emotion: 紧张、克制与生活喜剧感（来自简报）
-Core Mechanic: 观察环境、落脚时机、门速调节、搜索、掩体与接住物件
-Current Game Idea: 借便条寻找设备、利用环境声与道具引诱，安抚或引开跟随的家猫，处理来电后安全返回卧室；持续被识别才失败
-Current Graph / Data Structure Summary: 线索→搜索选择；动作噪声 × 环境掩护→听到的 H→警觉 A→父母状态→反馈→调整；声源道具改变调查位置，来电新增可静音声源
+Core Mechanic: 观察环境、整理线索与柜锁、落脚时机、门速调节、翻找、掩体与接住物件
+Current Game Idea: 解读便条和书架夹页、结合证据解开柜锁寻找设备，利用环境声与道具引诱，安抚或引开跟随的家猫，处理来电后安全返回卧室；持续被识别才失败
+Current Graph / Data Structure Summary: 谜题解读→线索组合→柜锁→翻找→设备；动作噪声 × 环境掩护→听到的 H→警觉 A→父母状态→反馈→调整；声源道具改变调查位置，来电新增可静音声源
 AI Agent Used: Codex
 Development Period: 2026-09-09 起
 Git Repository: https://github.com/lshhhhhhhhhh10/get-your-night-back
@@ -1050,3 +1050,24 @@ source 的镜头、谜题、翻找、人物和猫模块；game.html、assets/sty
 86 项规则检查与正式构建通过。浏览器验证三关谜题、错误答案不记线索、读题暂停、柜锁证据要求、解锁后翻找与静音、书架夹页、键鼠与模拟 PS5、换肤保存、猫全部行为、页面资源与相对路径、桌面和窄屏。前两关实际键盘完整通关；第三关各交互链通过，但几次直线路线测试被正常巡查发现，正在检查绕行路线。没有为了测试降低家长难度。实体 PS5 未连接本机，不声称完成硬件实测。
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 没有待批准的实施步骤。准备在原 GitHub Pages 发布并复查；等待学生体验改编外观、镜头和解谜节奏，不代写学生感受。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 34 — Raw Interaction Log
+**Time:** 2026-09-09（Asia/Shanghai）
+**Development Stage:** 新版上线与最终记录
+**Current Goal:** 确认公开站点可用、说明与素材来源一致
+**Git Tag / Commit:** 游戏 v0.10.0 / ed445fe；发布记录 v0.10.1
+### Student Prompt
+完成本轮镜头、角色皮肤、解谜柜锁、翻找与猫模型更新，并沿用原公开项目。
+### Agent Response Summary
+游戏已在原 GitHub Pages 上线。公开地址已验证三关线索谜题、柜锁、书架与抽屉特写、手机静音、猫的跟随安抚、九套衣柜外观、换肤与游戏进度保存，以及键鼠和模拟 PS5 输入。首页与制作过程包含新版实景和改编来源。
+### AI Design Assumptions (REQUIRED — do not skip)
+None. 最后仅补充来源表述和实测记录，没有降低家长视线或巡查难度。
+### Development Action
+核对 Pages 构建提交 ed445fe，运行公开站点检查并确认没有脚本或资源错误；核验所有内部路径相对、窄屏谜题可滚动取消、镜头贴墙/靠门/俯视避让。更正首页“本项目制作猫模型”的旧图注，明确为 Quaternius CC0 模型改编。
+### Files / Mechanics Changed
+index.html、process.html、development-log/agent-development-log.md；本条仅补发布和验证说明，游戏代码仍为 v0.10.0。
+### Immediate Result
+86 项规则检查通过，正式构建完成。前两关真实键盘完整通关。第三关实际按顺序解出三处线索、完成柜锁、找到设备并静音；多次自动路线在巡查期间直行或返程被发现，因此未宣称第三关整局自动通关。该结果说明等待和绕行仍需判断，不是用修改警觉参数使测试通过。三关各新增交互链已经在公开版本逐项验证；实体 PS5 与人类游玩节奏未验证。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+无待批准的实施步骤。等待学生试玩新版，评价近景距离、奶白色改编角色、解谜难度和第三关巡查节奏；未代写 Required Student Reflection。
