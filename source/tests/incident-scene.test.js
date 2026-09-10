@@ -7,10 +7,11 @@ import {IncidentCamera} from '../cinematic.js';
 import {stationFurniture,STATIONS,restingPencil,SURFACE_Y} from '../incident-setting.js';
 import {objectPose,pencilPose,cupPose,armJoints} from '../incident-motion.js';
 import {newRescue,advanceRescue} from '../rescue.js';
+import {rescueStep} from './rescue-helper.js';
 import {Game} from '../engine.js';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 const ids={vase:'vase',fork:'kitchen-search',pencils:'study-search',tin:'storage-search'};
-function finish(kind){const r=newRescue(kind,7);let t=0;for(let i=0;i<500;i++){t+=.02;const target=kind==='pencils'?(r.pencils.find(p=>p.state==='rolling')?.x||0):r.objectX;const result=advanceRescue(r,{rescueX:Math.max(-1,Math.min(1,(target-r.handX)*7)),gripLeft:.5,gripRight:.5,rescueDown:1},.02,t);if(result.done){assert.ok(result.success);return {type:'reaction',rescue:r,elapsed:0,sourceElapsed:t,success:true,incidentId:ids[kind]};}}assert.fail('rescue did not finish');}
+function finish(kind){const r=newRescue(kind,7);let t=0;for(let i=0;i<500;i++){t+=.02;const result=advanceRescue(r,rescueStep(r),.02,t);if(result.done){assert.ok(result.success);return {type:'reaction',rescue:r,elapsed:0,sourceElapsed:t,success:true,incidentId:ids[kind]};}}assert.fail('rescue did not finish');}
 
 test('远景和特写共用实际家具尺寸、装饰及归位坐标，装饰不伸出碰撞占地',()=>{
  const camera=new IncidentCamera();
@@ -32,8 +33,8 @@ test('四种救场结束位置与远景原位一致；铅笔真实插回杯口',
 });
 test('归位包含向后送回和抬起越过桌沿，松开推进／暂停不会继续归位',()=>{
  const g=new Game();g.start();g.beginIncident('vase');for(let i=0;i<150&&g.mode.rescue.stage!=='lower';i++){const r=g.mode.rescue;g.tick(.02,{rescueX:Math.max(-1,Math.min(1,(r.objectX-r.handX)*7)),gripLeft:.5,gripRight:.5});}
- const r=g.mode.rescue;assert.equal(r.stage,'lower');const first=objectPose(g.mode);for(let i=0;i<40;i++)g.tick(.02,{gripLeft:.5,gripRight:.5,rescueDown:1});const middle=objectPose(g.mode);assert.ok(middle.z<first.z-.08);assert.ok(middle.y>first.y+.07);
- const progress=r.returnProgress;g.tick(.02,{gripLeft:.5,gripRight:.5});near(r.returnProgress,progress);const saved=g.serialize(),h=new Game();assert.ok(h.restore(structuredClone(saved)));assert.deepEqual(objectPose(h.mode),objectPose(g.mode));g.active=false;g.tick(.05,{rescueDown:1});assert.deepEqual(g.serialize(),saved);
+ const r=g.mode.rescue;assert.equal(r.stage,'lower');const first=objectPose(g.mode);for(let i=0;i<40;i++)g.tick(.02,{gripLeft:.5,gripRight:.5,rescueY:-1});const middle=objectPose(g.mode);assert.ok(middle.z<first.z-.08);assert.ok(middle.y>first.y+.07);
+ const progress={...r.returnPosition};g.tick(.02,{gripLeft:.5,gripRight:.5});assert.deepEqual(r.returnPosition,progress);const saved=g.serialize(),h=new Game();assert.ok(h.restore(structuredClone(saved)));assert.deepEqual(objectPose(h.mode),objectPose(g.mode));g.active=false;g.tick(.05,{rescueY:-1});assert.deepEqual(g.serialize(),saved);
 });
 test('手臂骨段长度固定、归还到台面上方时无肘部穿台，窄屏也不会拉长',()=>{
  for(const kind of Object.keys(STATIONS)){

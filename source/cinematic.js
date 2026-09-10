@@ -4,6 +4,7 @@ import {createFurniture,animateFurniture} from './furniture.js';
 import {STATIONS,stationFor,stationFurniture,SURFACE_Y} from './incident-setting.js';
 import {objectPose,pencilPose,cupPose,handHeight,armJoints,smooth,impactTime} from './incident-motion.js';
 import {INCIDENTS} from './incidents.js';
+import {incidentView} from './incident-view.js';
 // A separate camera scene contains the exact same furniture and dressing as
 // exploration/search, normalized around its surface, with no substitute set.
 export class IncidentCamera{
@@ -43,9 +44,9 @@ export class IncidentCamera{
   for(const [k,g]of this.stations)g.visible=k===kind;
   this.floor.position.y=SURFACE_Y-f.h-.03;animateFurniture(station,mode.resume?.elapsed||0,!!mode.resume);
   const impact=reaction&&!mode.success?mode.elapsed-impactTime(r):-1,shake=impact>=0?Math.sin(impact*42)*Math.exp(-impact*11)*.01:0;
-  this.camera.position.set(shake,pencils?1.22:kind==='vase'?1.28:.96,(kind==='vase'?3.10:pencils?2.60:2.25)/Math.min(1,aspect/.95));
-  this.camera.lookAt(0,kind==='vase'?.42:pencils?.20:.07,.08);this.camera.fov=42;
-  this.camera.setViewOffset(1000,1000,0,aspect<.85?100:95,1000,1000);this.camera.aspect=aspect;this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);
+  const view=incidentView(kind,aspect);this.camera.position.set(shake,view.y,view.z);
+  this.camera.lookAt(0,view.targetY,view.targetZ);this.camera.fov=42;
+  this.camera.setViewOffset(1000,1000,0,kind==='vase'||kind==='tin'?0:aspect<.85?100:95,1000,1000);this.camera.aspect=aspect;this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);
   this.cat.visible=!!mode.catCause;
   if(this.cat.visible){updateCatModel(this.cat,{x:-.68,z:.08,state:'prepare',heading:.35,route:[]},clock);this.cat.position.y=SURFACE_Y-f.h;}
   const object=detail.object;object.position.set(pose.x,pose.y,pose.z);object.rotation.set(pose.rx,0,pose.rz);object.scale.y=pose.scale;

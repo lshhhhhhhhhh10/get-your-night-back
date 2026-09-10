@@ -16,6 +16,7 @@ export function objectPose(mode){
   if(time>impact){const a=time-impact;p.y+=Math.abs(Math.sin(a*17))*Math.exp(-a*9)*.055;p.rz+=Math.sin(a*17)*Math.exp(-a*8)*.07;}
   return p;
  }
+ if(r.stage==='lower'&&r.returnPosition)return {...r.returnPosition,rz:r.returnPosition.rz+(r.tilt-(r.returnTilt??r.tilt))};
  if(r.stage==='lower'&&r.returnFrom){const u=smooth(r.returnProgress||0),p=path(r.returnFrom,rest,u,.16);p.x+=(r.handX-(r.returnHandX??r.handX))*.55*(1-u);p.rz+=(r.tilt-(r.returnTilt??r.tilt))*(1-u);return p;}
  const t=mode.elapsed,reach=r.stage==='reach',u=reach?smooth(t/.65):1;
  const p={x:mix(rest.x,(r.objectX||0)*.55,u),y:rest.y-Math.max(0,1.3-r.height)*.5,z:mix(rest.z,stationFurniture(kind).d/2+.15,u),rx:kind==='fork'?mix(rest.rx,.35,u):0,rz:(r.tilt||0)*u,scale:1};

@@ -1,6 +1,7 @@
 import {STATIONS} from './incident-setting.js';
 import {applyIncidentResult} from './incident-props.js';
 import {rescueHelp} from './rescue.js';
+import {rescueControls} from './rescue-input.js';
 import {Haptics} from './haptics.js';
 import {createTickleHands,animateTickleHands} from './tickle-detail.js';
 import {TICKLE_TARGET,tickleCaption} from './tickle.js';
@@ -148,7 +149,7 @@ let saved=readSession(storage),selectedLevel=0,settingsFromPause=false,lastStatu
 const lockCamera=new LockCamera();let lockFocused=false,lockPointer=false,lockButton=false,lockEaseButton=false,lockDrag=0,lockPointerY=0,lockSelect=null;
 function clearLockInput(){releaseLock(game.mode?.mechanism);lockPointer=false;lockButton=false;lockEaseButton=false;lockDrag=0;lockSelect=null;}
 let doorPointer=false,doorFocused=false,ticklePointer=false,tickleFocused=false;
-let rescueFocused=false;let tickleHands;const haptics=new Haptics(),rescuePointers={left:false,right:false,x:0,down:0};
+let rescueFocused=false;let tickleHands;const haptics=new Haptics(),rescuePointers={left:false,right:false,x:0,up:0,down:0};
 let transition={time:1,from:camera.position.clone(),rotation:camera.quaternion.clone()};
 function setView(mode){
   if(view.mode===mode)return;transition={time:0,from:camera.position.clone(),rotation:camera.quaternion.clone()};view.mode=mode;if(mode!=='overview')view.closeMode=mode;
@@ -172,7 +173,7 @@ function startOrContinue(){
   const v=saved.view||{};view.yaw=Number.isFinite(v.yaw)?v.yaw:0;view.pitch=clamp(Number.isFinite(v.pitch)?v.pitch:-.1,-.95,.8);view.hasMoved=Boolean(v.hasMoved);view.closeMode=v.closeMode==='thirdPerson'?'thirdPerson':'firstPerson';view.mode=['firstPerson','thirdPerson'].includes(v.mode)?v.mode:'overview';transition.time=1;buildHouse();enterPlay();game.say('接着上一刻继续。进度已保存在这台浏览器里。','hint');
 }
 function returnMenu(){persist();game.active=false;haptics.stop();game.velocity={x:0,z:0};keys.clear();unlockMouse();hideDialogs();$('#start-screen').hidden=false;$('#hud').hidden=true;$('#interaction').hidden=true;transition.time=0;transition.from=camera.position.clone();transition.rotation=camera.quaternion.clone();updateStartLabel();}
-function pause(){if(game.status!=='playing'||!game.active)return;haptics.stop();clearLockInput();if(game.mode?.rescue)Object.assign(game.mode.rescue,{left:0,right:0,release:0,grace:.65});Object.assign(rescuePointers,{left:false,right:false,x:0,down:0});doorPointer=false;ticklePointer=false;if(game.mode?.type==='tickle')Object.assign(game.mode,{moving:false,pressure:0,stroke:0});if(game.mode?.drive)Object.assign(game.mode.drive,{pressure:0,moving:false,roughness:0,rate:0});persist();game.active=false;game.velocity={x:0,z:0};keys.clear();unlockMouse();$('#pause-screen').hidden=false;}
+function pause(){if(game.status!=='playing'||!game.active)return;haptics.stop();clearLockInput();if(game.mode?.rescue)Object.assign(game.mode.rescue,{left:0,right:0,release:0,grace:.65});Object.assign(rescuePointers,{left:false,right:false,x:0,up:0,down:0});doorPointer=false;ticklePointer=false;if(game.mode?.type==='tickle')Object.assign(game.mode,{moving:false,pressure:0,stroke:0});if(game.mode?.drive)Object.assign(game.mode.drive,{pressure:0,moving:false,roughness:0,rate:0});persist();game.active=false;game.velocity={x:0,z:0};keys.clear();unlockMouse();$('#pause-screen').hidden=false;}
 function resume(){clearLockInput();padInput.inhibit();if(game.mode?.rescue){game.mode.rescue.grace=.65;game.mode.rescue.release=0;}hideDialogs();game.active=true;keys.clear();enableAudio();}
 function toggleMap(){if(game.status!=='playing'||['catch','reaction','search','lockpick','door','tickle'].includes(game.mode?.type))return;view.hasMoved=true;setView(view.mode==='overview'?view.closeMode:'overview');}
 function toggleCloseView(){if(!game.active||game.mode)return;view.hasMoved=true;setView(view.closeMode==='thirdPerson'?'firstPerson':'thirdPerson');}
@@ -214,7 +215,7 @@ function updateUI(){updateHearing();updateNightUI();updateCatUI();document.body.
       $('#lock-instruction').textContent=inputDevice==='gamepad'?'左摇杆左右换针 · 轻压 R2 顶起，接缝齐平时松开 · 卡肩时 L2 卸力':'A / D 换针 · 按住 E 顶起，接缝齐平时松开 · 也可按住画面向下拖 · 卡肩时 Q 卸力';
       for(const [i,b]of [...document.querySelectorAll('[data-lock-pin]')].entries()){b.hidden=i>=l.pins.length;b.setAttribute('aria-pressed',String(l.selected===i));b.textContent=l.pins[i]?.seated?`${i+1} ✓`:`${i+1}`;}
     }
-    if(m.type==='catch'&&m.rescue){for(const el of document.querySelectorAll('[data-rescue=left],[data-rescue=down]'))el.hidden=m.rescue.kind==='pencils';$('#rescue-help').textContent=rescueHelp(m.rescue,inputDevice==='gamepad');$('#rescue-phase').textContent={reach:'看清落点，把手移过去',steady:'扶住了，稳一稳',lower:'把它轻轻放回',damp:'裹住，让颤动停下',sweep:'先看哪一枝会滚到桌沿'}[m.rescue.stage];}
+    if(m.type==='catch'&&m.rescue){for(const el of document.querySelectorAll('[data-rescue=up],[data-rescue=down]'))el.hidden=m.rescue.stage!=='lower';$('#rescue-left-button').hidden=m.rescue.kind==='pencils';$('#rescue-help').textContent=rescueHelp(m.rescue,inputDevice==='gamepad');$('#rescue-phase').textContent={reach:'看清落点，把手移过去',steady:'扶住了，稳一稳',lower:'把它轻轻放回',damp:'裹住，让颤动停下',sweep:'先看哪一枝会滚到桌沿'}[m.rescue.stage];}
     if(m.type==='step'||m.type==='catch'&&!m.rescue){$('#safe-band').style.left=`${(1-game.preset.width)*50}%`;$('#safe-band').style.width=`${game.preset.width*100}%`;$('#timing-help').textContent=m.type==='catch'?m.elapsed<CATCH_INTRO?'看清物件，准备接住……':`亮区内按一次空格 · ${Math.max(0,m.remaining).toFixed(1)} 秒`:'亮区内按空格，稳稳落下';$('#timing-button').textContent=m.type==='catch'?'空格 · 接住':'空格 · 落脚';$('#timing-button').disabled=m.type==='catch'&&m.elapsed<CATCH_INTRO;$('#timing-center-label').textContent=m.type==='catch'?'伸手接住':'轻轻落下';}
     if(m.type==='tickle'){$('#tickle-help').textContent=tickleCaption(m,game.parent);}
     if(m.type==='door'){$('#door-help').textContent=hingeCaption(m.drive);$('#push-door').classList.toggle('pushing',!!m.drive?.moving);}
@@ -308,6 +309,7 @@ function updateControllerHints(){
   set('#minimap-button small',padText('附近区域 · M 切视角'));
   set('#cancel-action',padText('Esc · 停下'));
   set('#door-instruction',pad?'轻压 R2 推门，压深更用力；松开停下。':'按住 E 或画面逐渐施力，松手停下。');
+  set('#rescue-move-left',pad?'← · 向左':'A · 向左');set('#rescue-move-right',pad?'→ · 向右':'D · 向右');set('#rescue-move-up',pad?'↑ · 向上':'W · 向上');set('#rescue-move-down',pad?'↓ · 向下':'S · 向下');
   set('#rescue-left-button',pad?'L2 · 左手':'Q · 左手');
   set('#rescue-right-button',pad?'R2 · 右手':'E · 右手');
   set('#tickle-instruction',pad?'轻压 R2 接触脚底，右摇杆左右轻挠；松开即停。':'按住 E 或下方按钮轻挠，松开停下；留意缩脚和呼吸。');
@@ -380,7 +382,7 @@ function animate(now){
     if(game.mode?.type!=='door'){
       const side=padFrame.left.x+(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),forward=-padFrame.left.y+(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0),yaw=view.mode!=='overview'?view.yaw:0;
       game.move(side*Math.cos(yaw)+forward*Math.sin(yaw),side*Math.sin(yaw)-forward*Math.cos(yaw),dt);
-    }game.tick(dt,{lockPressure:inputDevice==='gamepad'?padFrame.triggers.right:(lockPointer||lockButton||keys.has('e'))?.52:0,lockDrag:lockPointer?lockDrag:undefined,lockNav:inputDevice==='gamepad'?padFrame.left.x:(keys.has('d')?1:0)-(keys.has('a')?1:0),lockSelect,lockEase:inputDevice==='gamepad'?padFrame.triggers.left:(keys.has('q')||lockEaseButton)?1:0,rescueX:inputDevice==='gamepad'?padFrame.left.x:(keys.has('d')?1:0)-(keys.has('a')?1:0)+rescuePointers.x,rescueDown:inputDevice==='gamepad'?Math.max(0,padFrame.left.y):keys.has('s')?1:rescuePointers.down,gripLeft:inputDevice==='gamepad'?padFrame.triggers.left:(keys.has('q')||rescuePointers.left)?.55:0,gripRight:inputDevice==='gamepad'?padFrame.triggers.right:(keys.has('e')||rescuePointers.right)?.55:0,e:keys.has('e')||doorPointer||ticklePointer||padFrame.held[BUTTON.interact],ticklePressure:game.mode?.type==='tickle'&&inputDevice==='gamepad'?padFrame.triggers.right:undefined,tickleStroke:padFrame.right.x,doorPush:game.mode?.type==='door'&&inputDevice==='gamepad'?padFrame.triggers.right:undefined});
+    }game.tick(dt,{lockPressure:inputDevice==='gamepad'?padFrame.triggers.right:(lockPointer||lockButton||keys.has('e'))?.52:0,lockDrag:lockPointer?lockDrag:undefined,lockNav:inputDevice==='gamepad'?padFrame.left.x:(keys.has('d')?1:0)-(keys.has('a')?1:0),lockSelect,lockEase:inputDevice==='gamepad'?padFrame.triggers.left:(keys.has('q')||lockEaseButton)?1:0,...rescueControls(inputDevice,padFrame,keys,rescuePointers),rescueAspect:camera.aspect,e:keys.has('e')||doorPointer||ticklePointer||padFrame.held[BUTTON.interact],ticklePressure:game.mode?.type==='tickle'&&inputDevice==='gamepad'?padFrame.triggers.right:undefined,tickleStroke:padFrame.right.x,doorPush:game.mode?.type==='door'&&inputDevice==='gamepad'?padFrame.triggers.right:undefined});
     if(now-lastSave>900){persist();lastSave=now;}
   }
   lockDrag=0;lockSelect=null;
@@ -388,7 +390,7 @@ function animate(now){
   soundscape?.state(game.active&&game.status==='playing',game.parent.state);
   const focusDoor=game.mode?.type==='door',focusTickle=game.mode?.type==='tickle';
   if(focusTickle!==tickleFocused){tickleFocused=focusTickle;ticklePointer=false;transition={time:0,from:camera.position.clone(),rotation:camera.quaternion.clone()};if(focusTickle)unlockMouse();else{keys.clear();padInput.inhibit();padFrame=emptyFrame();haptics.stop();}}
-  const focusRescue=!!game.mode?.rescue;if(focusRescue!==rescueFocused){rescueFocused=focusRescue;Object.assign(rescuePointers,{left:false,right:false,x:0,down:0});if(focusRescue)unlockMouse();else{keys.clear();padInput.inhibit();padFrame=emptyFrame();haptics.stop();}}
+  const focusRescue=!!game.mode?.rescue;if(focusRescue!==rescueFocused){rescueFocused=focusRescue;Object.assign(rescuePointers,{left:false,right:false,x:0,up:0,down:0});if(focusRescue)unlockMouse();else{keys.clear();padInput.inhibit();padFrame=emptyFrame();haptics.stop();}}
   animateTickleHands(tickleHands,game.mode,game.time);
   if(focusDoor!==doorFocused){doorFocused=focusDoor;doorPointer=false;transition={time:0,from:camera.position.clone(),rotation:camera.quaternion.clone()};if(focusDoor)unlockMouse();}
   const audioForward=camera.getWorldDirection(new THREE.Vector3());listeningYaw=focusDoor||game.mode?.type==='tickle'?Math.atan2(audioForward.x,-audioForward.z):view.mode==='overview'?0:view.yaw;
