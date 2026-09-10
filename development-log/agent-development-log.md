@@ -1460,3 +1460,69 @@ Chrome 本机正式构建：Gamepad／模拟 USB × 木地板／瓷砖／地毯 
 
 ### 同轮发布完成补记
 游戏提交 `057e1f3112fdf22601cbd2b568d70335ca73c3cd` 已推送原 main，GitHub Pages 工作流 `34481166920` 成功。独立构建重新通过 61 项相关检查；公开 Chrome 的 12 组三材质普通／蹲行、Gamepad／模拟 USB 无震动检查，以及两条通路的门反馈、松手、暂停／续玩、失焦、断线和键鼠切换全部通过，无脚本或资源错误。三页及 24 个去重资源均为 200，公开游戏 SHA-256 `498d2b0438c3b986fb6fcf2df3fd4abbef200bb1e8ab3543a6ff3c0609e1a327` 与发布构建一致。验证脚本为 /private/tmp/night-back-qa/walking-haptics-publish.cjs、walking-haptics-online-pages.cjs。发布已完成，无待批准步骤；本补记随后续文档提交保存，游戏构建保持不变。其他任务的本地改动继续保留，未发布、未冒称整局或实体手柄测试。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 51 — Raw Interaction Log
+
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** 门框撞击与临近终点收力细节
+**Current Goal:** 连续最大力气开门时撞框巨响，最后放慢则能轻停，保持原门轴手感和防夹。
+**Git Tag / Commit:** 开发基准 `1f5bd75`；本轮未生成提交／标签，本条随本地门改动保存。同期触觉任务在独立目录发布其自身成果，不作为本轮门修订已公开的证据。
+
+### Student Prompt
+“如果一直用最大力气开门，门会撞到门框，发出巨响，如果最后门快完全打开的时候放慢速度，则不会，请继续还原这个细节。”
+
+### Agent Response Summary
+核对后确认原代码已按到终点时的转速判断撞击，但录音主要瞬态延迟约三分之一秒，音量与结束动作反馈偏弱。沿用原收力判断，加强并对齐撞框录音、手与合页反冲、短震和字幕；修正发声门自己挡住门框声、环境掩护错误减弱物理触觉的问题。最大施力只在接触时撞一次，前面大力不影响最后轻推的安静结果。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+1. 本轮是对已有终点细节的强化，保留无速度条、三段门声、松手立即停、R2 涩点阻力、双向防夹与父母退让；不引入松手惯性或强制等待。两扇门的开与关采用同一接触逻辑。
+2. 复用已有 CC0 door-bump.wav，从 0.305 秒取 0.34 秒，运行增益最高 3 倍；未掩护撞击噪声上限由 62 调到 90。具体音量、约 0.28 秒反冲、约 0.45 秒字幕优先与更强短脉冲均为授权内实施选择，不称为用户逐项确认或现实物理测量。
+3. 本人承受的撞击力度与父母听到的掩护后噪声分离；距离、其他门墙、掩护及原识别照常作用。视觉反冲不改变门扇角度／碰撞体。该轮不推断为再次公开上传授权，不提交或发布其他任务的改动。
+
+### Development Action
+检查状态、设计索引、实际门转速、终点事件、录音波形和音频／触觉链。让声音事件携带真实 impact；门框声音排除自身门扇遮挡，保留其他遮挡。手与合页短暂反冲后消失，玩家到头即可移动；存档不保存瞬间效果。浏览器检查发现父母翻身会立即覆盖撞门字幕，增加短时优先。最后完整开门脚本最初在 UI 80 毫秒刷新之前就读取字幕，改成等待真实字幕出现后通过，没有修改玩法迎合测试。一次补丁匹配与一次脚本相对路径错误均已核对并补齐，不影响最终文件。
+
+### Files / Mechanics Changed
+source/engine.js 的声音事件与终点分支、source/audio.js、source/feedback-profiles.js 的 doorBump 分支、source/spatial-audio.js、source/door-detail.js、source/main.js 的门渲染与声音链、新增 source/tests/door-impact.test.js；构建 assets/build/game.js。同步 README、brief D04 及旧段替代提示、assets/audio/README.md、docs/controller-feedback.md、index.html、process.html、PROJECT_STATUS.md 与本日志。同期取消走路震动和模型／接物改动均保留，不归为本轮门成果；未改原始简报、既有日志或 AGENTS。
+
+### Immediate Result
+45 项门、撞击、通行、触觉及空间音频测试通过，Vite 构建成功。新增 8 项覆盖三夜两扇门双向全力撞停、最后 5% 轻推、键鼠松手短推、掩护／真实冲击分离、即时移动、续玩不重播、视觉反冲释放、遮挡和字幕先后；原父母退让 24 个角度／位置组合继续通过。没有重跑三夜玩家整局，也未将同期模型改动视为完整验收。
+
+隔离 Chrome 本机正式构建检查键鼠、模拟标准 R2／USB、三段摩擦、双向终点单次撞击与提前收力、两侧及 390 宽、松手／暂停／失焦／断线通过，无脚本或资源错误。最终另从近乎全关完整对比：R2 一直压满仅一次撞击（impact 约 0.99996），最后 5% 轻推无撞击，键鼠末段松手再短推无撞击；撞门字幕与短反冲已看截图，脉冲结束后 USB 归零。
+
+离线真实音频链：最大撞击主峰由约 0.363 秒提前至 0.030 秒，峰值约 0.731（旧约 0.212）；轻碰约 0.192，掩护不改变本人听到的物理冲击，19 个录音加载且无削波。音量／音效设为 100%，背景声关闭，数值不冒充人耳听感或实体手柄体验。脚本在 /private/tmp/night-back-qa/door-impact-audio.cjs、door-impact-browser.cjs、door-impact-final.cjs，截图未公开。本轮门修订尚未上传；同目录触觉任务已另获上传授权，使用隔离目录，仅发布其自己的补丁。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+本轮门细节已在本地完成，无待确认的核心改向或实施步骤。待用户试玩撞框巨响与末段收力的实际体验；未把未回复当作参数确认，未新增实体设备结论，也不自动生成或代写反思。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 53 — Raw Interaction Log
+
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** v0.14.2 门框撞击公开发布
+**Current Goal:** 将已完成的门框撞击与末段轻停修订上传原公开地址，验证线上效果。
+**Git Tag / Commit:** 基准 `52f9bdaa34040c490fe894b054ac9e619dd3ed18`；本条随发布提交保存，提交尚未生成，不预填哈希。日志 52 属于同期模型任务，仍保留在共享本地日志，未随本次发布。
+
+### Student Prompt
+“请直接上传”。
+
+### Agent Response Summary
+按用户明确授权发布日志 51 的门细节，保留 v0.14.1 的走路无震动补丁。共享目录还包含另一任务的物品模型／接物修改，独立提取门改动与相关文档、重新构建验证后发布到原 GitHub Pages。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+本次“上传”指本任务已完成的门修订；采用 v0.14.2 作为本次公开版本标识。独立发布与原始日志编号保留是实施安排，不把授权扩大到未要求上传的模型工作，不改动新门参数或核心玩法。查看 Sites 发布技能后，遵循用户现有 GitHub Pages 目标，没有迁移网站。
+
+### Development Action
+核对远端与本地 main 都为 `52f9bda`，Pages 从 main 根目录发布。建立 `/private/tmp/night-back-door-release`，门专属模块直接提取，engine.js 与 main.js 仅带入门、声音和触觉相关分支；家具／事件结果保存等同期模型改动保持原公开基准。筛选 README、简报、页面和来源说明的门段落，保留原走路触觉成果。源码变化后重新运行对应测试、构建，并复核独立页面中的实际操作。
+
+### Files / Mechanics Changed
+发布 source/audio.js、door-detail.js、engine.js、feedback-profiles.js、main.js、spatial-audio.js、tests/door-impact.test.js、assets/build/game.js；更新 game.html 缓存版本及 README、brief D04、音频来源、触觉说明、首页、过程页、PROJECT_STATUS 和本日志。未发布同期模型、家具、救场、翻找镜头或相关实景图片；共享工作区全部修改保留。
+
+### Immediate Result
+独立发布目录 45 项相关检查通过，Vite 构建成功。Chrome 正式构建：完整最大 R2 开门撞响一次（impact 约 0.99996），最后 5% 轻推无撞击，键鼠末段松手后短推无撞击；字幕与 USB 结束归零通过，无脚本／资源错误。脚本为 /private/tmp/night-back-qa/door-impact-release.cjs。没有重跑三夜玩家整局或新增实体 USB 结论；音频数值仍引用日志 51 的实际离线渲染。提交、推送及线上核验继续进行，完成后在本条末尾追加真实结果。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+用户已明确授权，无待批准的发布步骤。继续完成上线、公开操作核验与结果记录；不把上传当作门参数、人类听感或实体手柄体验的逐项确认，不自动生成或代写反思。

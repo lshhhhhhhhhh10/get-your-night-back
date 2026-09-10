@@ -15,11 +15,13 @@ export function addDoorDetail(pivot){
   }
   return {hands,hinges};
 }
-export function animateDoorDetail(detail,drive,side,time){
-  detail.hands.visible=!!drive;
-  for(const hinge of detail.hinges)hinge.rotation.z=drive?.moving?Math.sin(time*65)*(drive.roughness||0)*.025:0;
-  if(!drive)return;
+export function animateDoorDetail(detail,drive,side,time,contact){
+  const age=contact?time-contact.at:1,recoiling=!drive&&age>=0&&age<.28;
+  const recoil=recoiling?Math.sin(age*Math.PI/.28)*contact.impact:0;
+  detail.hands.visible=!!drive||recoiling;
+  for(const hinge of detail.hinges)hinge.rotation.z=recoiling?Math.sin(age*95)*Math.exp(-age*18)*contact.impact*.035:drive?.moving?Math.sin(time*65)*(drive.roughness||0)*.025:0;
+  if(!drive&&!recoiling)return;
   detail.hands.scale.z=side;detail.hands.position.z=side*.14;
-  const shake=drive.moving?drive.roughness*Math.sin(time*53)*.006:0;
-  detail.hands.children.forEach((hand,i)=>{hand.position.z=shake+(i?-.015:0);hand.rotation.x=-drive.pressure*.14;hand.rotation.z=(i?1:-1)*drive.pressure*.07+shake;});
+  const shake=drive?.moving?drive.roughness*Math.sin(time*53)*.006:0,pressure=drive?.pressure??(recoiling?contact.impact:0);
+  detail.hands.children.forEach((hand,i)=>{hand.position.z=shake+recoil*.11+(i?-.015:0);hand.rotation.x=-pressure*.14-recoil*.16;hand.rotation.z=(i?1:-1)*pressure*.07+shake;});
 }

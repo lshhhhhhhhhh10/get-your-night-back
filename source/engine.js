@@ -2,6 +2,7 @@ import {REACTION_DURATION,impactTime} from './incident-motion.js';
 import {newRescue,advanceRescue,RESCUE_DURATION} from './rescue.js';
 import {tickleNear,tickTickle} from './tickle.js';
 import {floorAt} from './surfaces.js';
+import {doorsForSound} from './spatial-audio.js';
 import {locked,newLock,advanceLock,releaseLock,restoreLock,LOCKS} from './lockpick.js';
 import {newCat,tickCat,catNear,catInteraction,petCat,tossCatToy,restoreCat} from './cat.js';
 import {CLUES,LURES,WASHER,newNightTools,maskAt,phonePending} from './night-tools.js';
@@ -69,18 +70,18 @@ export class Game{
   }
   start(){this.status='playing';this.active=true;this.say('先听屋里的动静，再去房间找设备。遇到柜锁，靠近按 E 观察里面的机械结构。','hint');}
   say(text,type='info'){this.toast=text;this.toastLeft=5;this.events.push({type,text,time:this.time});if(type!=='snore'&&type!=='hint'){this.history.push({text,time:this.realTime});if(this.history.length>12)this.history.shift();}}
-  emit(kind,strength=0,x=this.player.x,z=this.player.z){this.events.push({type:'sound',kind,strength,x,z,surface:floorAt(x,z)});}
+  emit(kind,strength=0,x=this.player.x,z=this.player.z){const event={type:'sound',kind,strength,x,z,surface:floorAt(x,z)};this.events.push(event);return event;}
   makeNoise(amount,label,kind,source=this.player){
     const mask=maskAt(this,source);if(mask)amount*=mask.factor;
     if(amount>10){this.metrics.loudSounds++;this.metrics.noiseBurden+=amount-10;}
     this.noise=amount;this.noiseAt={x:source.x,z:source.z};this.noiseAge=0;this.quiet=0;
     // 墙和距离影响父母实际听到的声响；声响本身从不直接判负。
-    this.hearNoise(amount,source);
-    if(amount>10)this.say(label,'noise');this.emit(kind||(amount>15?'creak':'step'),amount,source.x,source.z);
+    this.hearNoise(amount,kind==='doorBump'?{...source,kind}:source);
+    if(amount>10)this.say(label,'noise');return this.emit(kind||(amount>15?'creak':'step'),amount,source.x,source.z);
   }
   hearNoise(amount,source,force=false){
     if(force)this.quiet=0;
-    const dist=distance(source,this.parent),attenuation=occluded(source,this.parent,this.level,this.doors)?.50:1;
+    const dist=distance(source,this.parent),attenuation=occluded(source,this.parent,this.level,doorsForSound(source,this.doors))?.50:1;
     const heard=amount*attenuation/(1+dist*.07);
     this.parent.a=clamp(this.parent.a+heard,0,100);if(heard>=6){this.inspectionTarget={x:source.x,z:source.z};if(['checking','returning'].includes(this.parent.state)&&this.time-this.parent.lastRetarget>1.2){this.parent.state='checking';this.parent.intent='investigate';this.parent.itinerary=[];this.parent.lastRetarget=this.time;this.setDestination(this.inspectionTarget);}}
     if(heard>=6&&this.parent.state==='warning'){this.parent.intent='investigate';this.parent.itinerary=[{...this.inspectionTarget}];}
@@ -270,7 +271,13 @@ export class Game{
         }
         if(drive.moving&&(drive.direction===-1?d.progress<=0:d.progress>=1)){
           d.open=d.progress===1;this.mode=null;
-          if(drive.impact>0)this.makeNoise(24+drive.impact*38,d.open?'砰！门推到底，撞上了门挡。':'砰！门板撞上了门框。','doorBump',d);
+          if(drive.impact>0){
+            d.contact={at:this.time,impact:drive.impact};
+            const label=drive.impact>.55?(d.open?'砰——！门猛地撞上限位门框。':'砰——！门板重重撞上门框。'):'咚，门在尽头碰了一下。';
+            const event=this.makeNoise(24+drive.impact*66,label,'doorBump',d);
+            // 环境掩护影响父母听到的声音，不减弱手里承受的物理撞击。
+            event.impact=drive.impact;
+          }
           else{this.say(d.open?'门开了。停一拍，听听有没有回应。':'门轻轻合上了。听听门外的动静。','good');this.emit('latch',12,d.x,d.z);}
         }
       }

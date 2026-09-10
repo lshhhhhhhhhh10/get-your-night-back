@@ -12,10 +12,12 @@
 | --- | --- | --- |
 | door-handle.wav | door_open.wav | 转动把手、开门起始 |
 | door-hinge.wav | door_creak_open.wav | 家长推门与新录音载入失败时的后备素材 |
-| door-bump.wav | door_close.wav | 旧版木门碰撞素材；v0.11 玩家推门不再周期触发 |
+| door-bump.wav | door_close.wav | 开合终点快速撞框，仅在真实接触时触发一次；运行时取 0.305–0.645 秒瞬态与余响，增益最高 3 倍，随撞击强度降低 |
 | door-latch.wav | lock.wav | 门锁机械声切片 |
 | drawer.wav | drawer_open.wav | 搜索抽屉时的滑动 |
 | metal-drop.wav | clang_metal.wav | 叉子、铁盒落地 |
+
+2026-09-10 本地撞击修订沿用上表已有 WAV，没有新增下载或重新宣称核对许可。主要峰值原在约 0.326 秒；运行切片将其对齐接触前沿。离线 Chrome 完整音频链测得近距离最大撞击峰值约 0.731，主峰在起播约 0.030 秒；测试条件为主音量／音效 100%，背景声关闭，非人类听感或实体设备验证。
 
 未在本页来源表中列出的音乐和音效由项目 Web Audio 程序生成。运行时只访问本仓库资源，不请求外部音频服务。
 

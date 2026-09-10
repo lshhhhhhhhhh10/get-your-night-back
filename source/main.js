@@ -4,7 +4,7 @@ import {Haptics} from './haptics.js';
 import {createTickleHands,animateTickleHands} from './tickle-detail.js';
 import {TICKLE_TARGET,tickleCaption} from './tickle.js';
 import {floorAt,FLOOR_NAMES,RUGS} from './surfaces.js';
-import {acousticProfile,SOUND_LABELS} from './spatial-audio.js';
+import {acousticProfile,doorsForSound,latestSoundCue,SOUND_LABELS} from './spatial-audio.js';
 import {hingeCaption} from './door.js';
 import {addDoorDetail,animateDoorDetail} from './door-detail.js';
 import {cameraBlocked} from './follow-camera.js';
@@ -130,15 +130,15 @@ let audioContext,soundscape;
 const heardCues=[];let listeningYaw=0;
 function applyAudio(){soundscape?.apply();}
 function enableAudio(){if(!audioContext){audioContext=new(window.AudioContext||window.webkitAudioContext)();soundscape=new Soundscape(audioContext,settings);}audioContext.resume().catch(()=>{});}
-function sound(kind,strength,x,z,surface){
-  const blocked=occluded(game.player,{x,z},game.level,game.doors,false);
-  soundscape?.effect(kind,strength,x,z,game.player,listeningYaw,blocked,surface);
+function sound(kind,strength,x,z,surface,impact){
+  const source={kind,x,z},blocked=occluded(game.player,source,game.level,doorsForSound(source,game.doors),false);
+  soundscape?.effect(kind,strength,x,z,game.player,listeningYaw,blocked,surface,impact);
   if(SOUND_LABELS[kind]&&distance(game.player,{x,z})>.6){heardCues.push({kind,x,z,at:performance.now()});if(heardCues.length>5)heardCues.shift();}
 }
 function updateHearing(){
   const now=performance.now();while(heardCues.length&&now-heardCues[0].at>2200)heardCues.shift();
-  const cue=heardCues.at(-1),el=$('#sound-direction');el.hidden=!cue||!game.active;
-  if(cue){const blocked=occluded(game.player,cue,game.level,game.doors,false),a=acousticProfile(cue,game.player,listeningYaw,blocked);el.textContent=`${a.direction} · ${a.range}${blocked?' · 隔着墙或门':''} ｜ ${SOUND_LABELS[cue.kind]}`;}
+  const cue=latestSoundCue(heardCues,now),el=$('#sound-direction');el.hidden=!cue||!game.active;
+  if(cue){const blocked=occluded(game.player,cue,game.level,doorsForSound(cue,game.doors),false),a=acousticProfile(cue,game.player,listeningYaw,blocked);el.textContent=`${a.direction} · ${a.range}${blocked?' · 隔着墙或门':''} ｜ ${SOUND_LABELS[cue.kind]}`;}
 }
 
 const stateNames={sleep:'鼾声平稳',alert:'鼾声停了',warning:'床板响了',checking:'脚步靠近',returning:'脚步远去'};
@@ -390,9 +390,9 @@ function animate(now){
   animateTickleHands(tickleHands,game.mode,game.time);
   if(focusDoor!==doorFocused){doorFocused=focusDoor;doorPointer=false;transition={time:0,from:camera.position.clone(),rotation:camera.quaternion.clone()};if(focusDoor)unlockMouse();}
   const audioForward=camera.getWorldDirection(new THREE.Vector3());listeningYaw=focusDoor||game.mode?.type==='tickle'?Math.atan2(audioForward.x,-audioForward.z):view.mode==='overview'?0:view.yaw;
-  soundscape?.listen(game.player,listeningYaw,v=>occluded(game.player,v,game.level,game.doors,false));
+  soundscape?.listen(game.player,listeningYaw,v=>occluded(game.player,v,game.level,doorsForSound(v,game.doors),false));
   soundscape?.doorMotion(game.mode,game.active&&game.status==='playing',game.player,focusDoor?(game.player.z>game.mode.door.z?0:Math.PI):view.yaw);
-  for(const e of game.events.splice(0)){if(e.type==='sound')sound(e.kind,e.strength,e.x,e.z,e.surface);if(game.active&&inputDevice==='gamepad')haptics.handle(e,now);}
+  for(const e of game.events.splice(0)){if(e.type==='sound')sound(e.kind,e.strength,e.x,e.z,e.surface,e.impact);if(game.active&&inputDevice==='gamepad')haptics.handle(e,now);}
   haptics.tick(game,now,!!activePad&&game.active&&game.status==='playing'&&inputDevice==='gamepad');
   const traveled=distance(old,game.player),moving=traveled>.0001;walkPhase+=traveled*8;
   playerMesh.position.set(game.player.x,0,game.player.z);const angle=game.player.heading-playerMesh.rotation.y;playerMesh.rotation.y+=Math.atan2(Math.sin(angle),Math.cos(angle))*Math.min(1,dt*16);
@@ -417,7 +417,7 @@ function animate(now){
     if(name==='Spine'&&parentSleeping)bone.rotateX(Math.sin(now*.0015)*.018);
   }
   parentLight.visible=['checking','returning'].includes(p.state);parentLight.position.set(p.x,1.25,p.z);parentTarget.position.set(p.x+Math.sin(p.heading)*4,.05,p.z+Math.cos(p.heading)*4);
-  for(const{d,pivot,detail}of doorMeshes){pivot.rotation.y=d.progress*Math.PI*.49;animateDoorDetail(detail,focusDoor&&game.mode.door===d?game.mode.drive||{}:null,game.player.z>=d.z?1:-1,game.time);}
+  for(const{d,pivot,detail}of doorMeshes){pivot.rotation.y=d.progress*Math.PI*.49;animateDoorDetail(detail,focusDoor&&game.mode.door===d?game.mode.drive||{}:null,game.player.z>=d.z?1:-1,game.time,distance(game.player,d)<1.7?d.contact:null);}
   for(const{s,mesh,marker}of spotMeshes){animateFurniture(mesh,game.mode?.elapsed||0,game.mode?.type==='search'&&game.mode.spot.id===s.id);if(mesh.userData.padlock)mesh.userData.padlock.visible=locked(game,s.id);marker.visible=!s.searched&&distance(s,game.player)<2&&!occluded(game.player,s,game.level,game.doors,true,s.id);}
   updateCatModel(catMesh,game.cat,game.time);catToyMesh.visible=!!game.cat.toy;if(game.cat.toy){const t=game.cat.toy,u=Math.min(1,t.age/.5);catToyMesh.position.set(t.from.x+(t.x-t.from.x)*u,.07+Math.sin(u*Math.PI)*.35,t.from.z+(t.z-t.from.z)*u);catToyMesh.rotation.x=game.time*3;}
   updateNightProps(nightProps,game);const nearest=game.toolNear();for(const {item,marker}of toolLabels)marker.visible=game.active&&nearest?.id===item.id;chargerLamp.visible=!game.hasDevice&&!locked(game,game.spots.find(s=>s.device).id);

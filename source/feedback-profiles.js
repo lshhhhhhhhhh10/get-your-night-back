@@ -9,7 +9,7 @@ export function eventFeedback(e){
     return null;
   }
   if(e.type!=='sound')return null;
-  if(e.kind==='doorBump'){const impact=clamp((e.strength-24)/38);return pulse(.14+impact*.28,.10+impact*.16,65+impact*45,4);}
+  if(e.kind==='doorBump'){const impact=clamp(e.impact??((e.strength-24)/66));return pulse(.14+impact*.38,.10+impact*.24,65+impact*65,4);}
   // Walking sounds stay audible without rumble. The floor timing action emits
   // its own feedback so automatically crossing a masked board stays neutral.
   const sounds={lockPin:pulse(.025,.14,32,3),lockScrape:pulse(.10,.19,70,2),
