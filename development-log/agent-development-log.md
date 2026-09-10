@@ -1456,3 +1456,7 @@ Chrome 本机正式构建：Gamepad／模拟 USB × 木地板／瓷砖／地毯 
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 用户已明确授权上传，无待批准步骤。继续完成提交、推送、Pages 部署与线上交互检查；其他任务各自继续原要求，后续日志重读后续号。不自动生成阶段反思。
+
+
+### 同轮发布完成补记
+游戏提交 `057e1f3112fdf22601cbd2b568d70335ca73c3cd` 已推送原 main，GitHub Pages 工作流 `34481166920` 成功。独立构建重新通过 61 项相关检查；公开 Chrome 的 12 组三材质普通／蹲行、Gamepad／模拟 USB 无震动检查，以及两条通路的门反馈、松手、暂停／续玩、失焦、断线和键鼠切换全部通过，无脚本或资源错误。三页及 24 个去重资源均为 200，公开游戏 SHA-256 `498d2b0438c3b986fb6fcf2df3fd4abbef200bb1e8ab3543a6ff3c0609e1a327` 与发布构建一致。验证脚本为 /private/tmp/night-back-qa/walking-haptics-publish.cjs、walking-haptics-online-pages.cjs。发布已完成，无待批准步骤；本补记随后续文档提交保存，游戏构建保持不变。其他任务的本地改动继续保留，未发布、未冒称整局或实体手柄测试。
