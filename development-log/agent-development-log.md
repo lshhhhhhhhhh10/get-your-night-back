@@ -1134,3 +1134,24 @@ source/audio.js、assets/build/game.js、game.html 的版本路径、process.htm
 线上上述操作无脚本或资源错误，七个录音全部正常加载。93 项规则检查通过，第一关实际键盘完整通关为 100 分。音频补丁复测重摩擦 RMS 0.0476、轻推 0.0055，峰值低于 0.784，停止后归零，交叠段持续有声。没有实体 DualSense 实测，也没有把客观音频检查等同于人类自然听懂反馈。
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 无需再次批准发布。等待学生体验声音、松手收力与实体手柄压感，再根据真实反馈调整；学生反思留给学生本人。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 38 — Raw Interaction Log
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** 项目文档维护规则与最小整理
+**Current Goal:** 建立每轮维护的状态入口，分开长期规则、有效设计与历史证据
+**Git Tag / Commit:** 游戏基准 v0.11.1 / 08ceb32；本条随本轮文档提交保存，提交说明为 Establish project documentation maintenance and preserve original brief
+### Student Prompt
+用户要求：每轮自动更新 PROJECT_STATUS.md；明确确认的玩法同步 brief.md 并标清旧规则替代；AGENTS.md 只存长期协作规则；日志按现有协议追加，不代写学生反思；新任务先读规则、状态和相关设计；常规文档同步不逐次询问，不把 AI 未获准的核心建议写成用户已确认决定。先检查文件、最小整理，保留原始简报和历史。
+### Agent Response Summary
+发现项目没有 AGENTS.md 或 PROJECT_STATUS.md，工作简报同时保留了初版与后续门速、镜头、线索、模型规则，README 尚有“□，推门时按住”的旧说明。新建长期规则与当前状态，增加简报当前索引和局部替代标记；确认范围和 AI 实施选择分列。找到桌面原始 Get-Your-Night-Back.md 并逐字存档，不回写原文件。
+### AI Design Assumptions (REQUIRED — do not skip)
+没有新增玩法决定。文档组织选择：原稿存放 development-log/brief-original.md；用简报顶部的 D01–D11 索引与旧段落旁提示消除冲突，避免重写整份正文；状态只保存当前摘要，历史继续在日志。明确“取消最低门速惩罚”和“不以五分钟强限扩建”等是先前 AI 的实施取舍，不倒写成用户原话。
+### Development Action
+建立启动与收尾读取／维护流程，保存既有中文沟通、独立判断和证据边界。把反复出现的旧按键残留、模型与碰撞不一致、持续输入未释放及测试范围误报等问题写为具体检查动作；补上状态与规则的 README／制作过程入口，并记录本轮纯文档变化。
+### Files / Mechanics Changed
+AGENTS.md、PROJECT_STATUS.md、brief.md、development-log/brief-original.md、README.md、process.html、development-log/agent-development-log.md。没有改动游戏源码、构建、模型、声音、原系统图或原日志协议；游戏版本仍为 v0.11.1。
+### Immediate Result
+原稿副本 SHA-256 与桌面原件一致；剥离本轮插入块后可精确恢复旧工作简报；既有日志保留，仅追加本条；文档相对链接和差异检查通过。只读核对 Pages 时游戏基准 08ceb32 已构建成功。状态页明确标注 93 项规则检查与浏览器通关是上轮实际结果，本轮没有重跑游戏测试；保留实体手柄未实测、第三关新解谜版整局自动验证未完成及人类体验未测量等边界。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+本轮维护规则由用户直接要求，无待批准的文档同步或新增核心设计。等待用户下一项项目任务，后续每轮按新规则维护；尚未请求阶段反思，不代写学生回答。
