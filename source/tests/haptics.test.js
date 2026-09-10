@@ -49,11 +49,41 @@ test('cancel, denial, unsupported browser, Bluetooth and HID write failure remai
 test('disconnect drops pending device state without prompting again',async()=>{
   const {output,unplug}=mockOutput();await output.request();await output.update({left:{strength:3}});unplug();assert.equal(output.status,'disconnected');assert.equal(output.connected,false);assert.equal(output.pending,null);
 });
-test('tile is short, wood rounded, carpet faint, crouching softer; remote parents have no vibration',()=>{
-  const profile=surface=>eventFeedback({type:'sound',kind:'step',surface}),tile=profile('tile'),wood=profile('wood'),carpet=profile('carpet');
-  assert.ok(tile.duration<wood.duration);assert.ok(tile.weak>wood.weak);assert.ok(wood.strong>tile.strong);assert.ok(carpet.strong+carpet.weak<wood.strong+wood.weak);
-  assert.ok(eventFeedback({type:'sound',kind:'crouchStep',surface:'wood'}).strong<wood.strong);
+test('walking and crouching on every material stay neutral; floor sounds and remote parents do not vibrate',()=>{
+  for(const surface of ['tile','wood','carpet',undefined])for(const kind of ['step','crouchStep','floorPressure','floorSoft','floorCreak','creak'])assert.equal(eventFeedback({type:'sound',kind,surface}),null,`${kind} / ${surface}`);
   for(const kind of ['parentStep','snore','bed','latch','notice'])assert.equal(eventFeedback({type:'sound',kind}),null);
+});
+test('walking keeps sound and noise while only the deliberate floor timing action gives feedback',()=>{
+  for(const hidden of [false,true]){
+    const g=new Game();g.start();g.hidden=hidden;g.events=[];
+    for(let i=0;i<60;i++)g.move(1,0,1/60);
+    assert.ok(g.events.some(e=>e.kind===(hidden?'crouchStep':'step')));
+    assert.equal(g.noise,hidden?1:3);assert.ok(g.events.every(e=>eventFeedback(e)===null));
+  }
+  const approach=masked=>{const g=new Game();g.start();if(masked)g.lastSnore=-.5;g.doors[0].open=true;g.doors[0].progress=1;g.player={x:3,z:9.7};g.footTile='3,10';g.events=[];for(let i=0;i<40&&!g.mode;i++)g.move(0,-1,1/60);return g;};
+  const masked=approach(true);assert.equal(masked.mode,null);assert.ok(masked.night.maskedSteps>0);assert.ok(masked.events.some(e=>e.kind==='floorSoft'));assert.ok(masked.events.every(e=>eventFeedback(e)===null));
+  for(const success of [true,false]){
+    const g=approach(false);assert.equal(g.mode.type,'step');assert.ok(g.events.some(e=>e.kind==='floorPressure'));assert.ok(g.events.every(e=>eventFeedback(e)===null));
+    g.events=[];g.pointer=success?.5:.99;g.pressSpace();
+    const feedback=g.events.map(eventFeedback).filter(Boolean);assert.equal(feedback.length,1);assert.equal(g.noise,success?5:50);assert.equal(g.metrics.goodSteps,success?1:0);
+    assert.deepEqual(feedback[0],eventFeedback({type:'haptic',kind:'floorLanding',success}));
+  }
+});
+test('footsteps neither start output nor interrupt or extend an interaction pulse on either route',async()=>{
+  for(const usb of [false,true]){
+    const {output,device}=mockOutput(),calls=[];if(usb)await output.request();
+    const h=new Haptics({output});h.connect({...pad,vibrationActuator:{playEffect:(_,p)=>{calls.push(p);return Promise.resolve('complete');},reset:()=>Promise.resolve()}});
+    const walking={mode:null};
+    for(let now=1000;now<2000;now+=100){h.handle({type:'sound',kind:now%200?'step':'crouchStep',surface:'wood'},now);h.tick(walking,now,true);await output.sending;}
+    assert.equal(calls.length,0);assert.ok(device.reports.every(r=>neutral(r.bytes)));assert.equal(h.effect,null);
+    h.handle({type:'sound',kind:'doorHandle'},2000);h.tick(walking,2000,true);await output.sending;
+    assert.ok(usb?device.reports.at(-1).bytes[2]>0:calls.length===1);
+    const until=h.until,effect=h.effect;
+    h.handle({type:'sound',kind:'step',surface:'tile'},2010);h.tick(walking,2010,true);assert.equal(h.until,until);assert.equal(h.effect,effect);
+    h.handle({type:'sound',kind:'crouchStep',surface:'carpet'},2200);h.tick(walking,2200,true);await output.sending;
+    assert.ok(usb?neutral(device.reports.at(-1).bytes):calls.length===1);
+    h.stop();if(usb)await output.disconnect();
+  }
 });
 test('hinge resistance retains sticky zones; medium-speed grain exceeds fast sliding, release is neutral',()=>{
   const at=(progress,pressure)=>{const door={x:3,progress},drive=restingDoor();advanceDoor(door,drive,{doorPush:pressure},.01);return {mode:{type:'door',drive}};};
@@ -81,7 +111,7 @@ test('USB owns both effects; settings independent; pause and lost input release 
   h.connect({...pad,vibrationActuator:{playEffect:()=>native.push('pulse'),reset:()=>native.push('reset')}},false,{adaptiveTriggers:true,triggerStrength:1});
   const game={mode:{type:'door',drive:{moving:true,pressure:.7,resistance:1,roughness:.7}}};
   h.tick(game,1000,true);await output.sending;assert.equal(device.reports.at(-1).bytes[10],0x21);assert.equal(device.reports.at(-1).bytes[3],0);assert.equal(native.includes('pulse'),false);
-  h.connect(h.pad,true,{adaptiveTriggers:false,hapticIntensity:1});h.handle({type:'sound',kind:'step',surface:'tile'},1200);h.tick(game,1200,true);await output.sending;assert.equal(device.reports.at(-1).bytes[10],5);assert.ok(device.reports.at(-1).bytes[2]>0);
+  h.connect(h.pad,true,{adaptiveTriggers:false,hapticIntensity:1});h.handle({type:'sound',kind:'doorHandle'},1200);h.tick(game,1200,true);await output.sending;assert.equal(device.reports.at(-1).bytes[10],5);assert.ok(device.reports.at(-1).bytes[2]>0);
   h.tick(game,1210,false);await output.sending;assert.ok(neutral(device.reports.at(-1).bytes));h.connect(null);await output.sending;assert.ok(neutral(device.reports.at(-1).bytes));await output.disconnect();
 });
 test('feedback settings migrate and clamp without changing look sensitivity',()=>{

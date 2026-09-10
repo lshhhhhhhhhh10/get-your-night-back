@@ -168,6 +168,7 @@ export class Game{
     const success=Math.abs(this.pointer-.5)<=this.preset.width/2;
     if(m.type==='step'){
       this.metrics.steps++;if(success)this.metrics.goodSteps++;this.mode=null;
+      this.events.push({type:'haptic',kind:'floorLanding',success});
       if(m.continuous){this.stepTransit={from:{x:this.player.x,z:this.player.z},target:m.target,elapsed:0};this.footTile=m.tile;this.makeNoise(success?5:50,success?'木板轻轻吱了一声。':'吱呀——这块木板响了。',success?'floorSoft':'floorCreak');}
       else{this.player.x=m.target.x;this.player.z=m.target.z;this.footTile=`${Math.round(m.target.x)},${Math.round(m.target.z)}`;this.makeNoise(success?5:50,success?'木板轻轻吱了一声。':'吱呀——这块木板响了。',success?'floorSoft':'floorCreak');this.checkSpatialEvents();}
       if(success){this.safeSteps++;this.say('稳稳落下。再听听卧室里有没有变化。','good');}

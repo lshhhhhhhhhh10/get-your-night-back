@@ -1392,3 +1392,67 @@ Pages 构建及上传成功后，部署阶段等待约 8 分钟才完成；其�
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 上传授权已经执行，继续同步这份文档记录并核对最终远端提交及游戏构建不变；无需再次审批。等待用户之后对机械开锁和掉落动画给出实际试玩反馈，不代写反思。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 49 — Raw Interaction Log
+
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** 根据试玩反馈取消走路震动
+**Current Goal:** 移动不触发震动，保留其他交互反馈及既有声音规则。
+**Git Tag / Commit:** 基准 `1f5bd75`；本地 v0.14.1 触觉补丁，尚未生成本轮提交／标签，本条随本轮改动保存。
+
+### Student Prompt
+“请去除走路时手柄的震动，只在进行其他操作时候震动，即优化手柄的震动逻辑”。
+
+### Agent Response Summary
+取消普通走路与蹲行的材质震动，并处理自动跨过松动木板仍借用落脚反馈的边界情况。走上木板或借掩护自动跨板不震动；手动落脚判定改为独立触觉事件，仅按空格／× 完成操作后给短反馈。开门、开锁、接物等交互及原手机事件反馈保留，不影响脚步声音、噪声与父母行为。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+1. 将“不在走路时震动”应用于普通移动、蹲行、木板自动受力提示和掩护下自动跨板。手动落脚属于独立操作，保留成功轻／失误稍强的原力度，以独立事件避免仅删普通脚步后仍自动震动。
+2. 保留现有手机来电／静音、摸猫、翻找等事件反馈；步行不能覆盖、延长或强行截断其他交互的短脉冲。自适应扳机和原释放保护不变，没有新增震动开关或另设难度。
+3. v0.14.1 是本地触觉补丁的实施标识，不是用户逐项确认，也不代表同期模型任务已完成。此次请求是修改游戏，未推断为新的公开上传授权。
+
+### Development Action
+先读协作规则、状态、简报索引和日志协议，起始工作区干净。定位统一声音到触觉映射；删除步行和自动地板声音的触觉映射，在手动落脚判定处新增一次 floorLanding 事件。更新旧材质触觉测试，补充声音保留、自动跨板、手动判定、两条输出通路及脚步不干扰交互的检查。构建后在隔离 Chrome 与定点存档中验证模拟手柄。收尾发现同目录任务“修复物品模型与拾取动作”正在修改模型、动画、入口和构建，保留其全部改动并通知共享文档和日志续号安排；未接管或宣称验收该任务。
+
+### Files / Mechanics Changed
+本轮修改 source/feedback-profiles.js、source/engine.js 的 pressSpace 事件、source/tests/haptics.test.js；构建 assets/build/game.js。更新 game.html 的震动标签与资源版本、README.md、brief.md 的 D15／历史替代提示／本轮补充、docs/controller-feedback.md、index.html、process.html、PROJECT_STATUS.md 与本日志。同期 cinematic.js、incident-motion.js、incident-props.js、incident-setting.js、furniture.js、rescue.js 和 main.js 的模型／动画改动不归为本轮成果；后续共享构建可能继续更新。原始简报、既有日志和 AGENTS.md 均未改写。
+
+### Immediate Result
+61 项相关自动测试通过，Vite 构建成功。首轮新掩护用例只设了时间，未满足原鼾声窗口而失败；修正用例中的上次鼾声时间后通过，没有修改游戏规则。普通走路声音／噪声保留，自动跨板无触觉，手动落脚成功与失败各一次反馈，脚步不覆盖或延长其他脉冲。
+
+Chrome 本机正式构建：Gamepad／模拟 USB × 木地板／瓷砖／地毯 × 普通行走／蹲行共 12 组通过，实际移动超过一脚步，震动调用为零／USB 报文中性；两条通路的抓门短震、R2 推门、松手、暂停、续玩旧按压抑制、失焦、断线和切回键鼠通过，无脚本或资源错误。临时脚本为 /private/tmp/night-back-qa/walking-haptics-v14-1.cjs。首次启动本机服务器与 Chrome 受沙箱限制，获执行权限后运行通过；不是游戏故障。未重跑全套、三夜整局或实体 USB 手感，未发布；同期模型任务的整体验证仍由其完成。已同步当前文档与历史替代边界。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+无待确认的核心改向或本轮实施步骤。等待用户之后试玩无走路震动及保留交互反馈的实际手感；没有将未回复当作参数确认。本轮未上传，不自动起草阶段反思或代写学生反思；同期模型任务继续处理其原请求。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 50 — Raw Interaction Log
+
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** v0.14.1 触觉补丁公开发布
+**Current Goal:** 将取消走路震动的已完成补丁上传原 GitHub 仓库与 Pages，并核验线上效果。
+**Git Tag / Commit:** 基准 `1f5bd75`；本条随 v0.14.1 发布提交保存，提交尚未生成，不预填哈希。
+
+### Student Prompt
+“请直接上传”。
+
+### Agent Response Summary
+按明确授权发布日志 49 的触觉补丁。共享工作区还有两个任务正在修改门撞击、模型和接物；从公开基准建立独立目录，只加入已完成的震动改动和对应说明，重新构建验证后上传，不打包未完成的其他任务。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+“上传”指当前任务已完成的走路震动优化，目标仍为现有仓库与 GitHub Pages。独立目录隔离其他任务的在制改动是发布实施选择，不增加新玩法，也不把上传授权视为其他模型或门参数的逐项确认。
+
+### Development Action
+核对远端 main 为 `1f5bd75cfd7e0f654101025d025d0813eccdcbdc`，Pages 使用 main 根目录。与两项并行任务协调避免 Git 写入冲突，在 `/private/tmp/night-back-v0141-release` 从同一基准加入独立触觉补丁；保留共享目录的其他修改。限定 source/engine.js 为手动落脚事件一行，feedback-profiles.js 为脚步映射移除与独立落脚反馈，没有夹带新的撞门强度或音频改动。重建发布文件并复核手柄输出。
+
+### Files / Mechanics Changed
+发布 source/engine.js 的手动落脚事件、source/feedback-profiles.js、source/tests/haptics.test.js、assets/build/game.js、game.html 的震动标签与资源版本，以及 README.md、brief.md、docs/controller-feedback.md、index.html、process.html、PROJECT_STATUS.md 和日志。没有发布同期动画、家具、门撞击及声音等在制改动。
+
+### Immediate Result
+独立发布目录重新运行 61 项相关检查通过，Vite 构建成功。Chrome 正式构建检查与线上核验继续执行；最终部署提交、构建哈希与线上结果在后续条目记录。本轮不冒称整局通关或实体 USB 手感实测。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+用户已明确授权上传，无待批准步骤。继续完成提交、推送、Pages 部署与线上交互检查；其他任务各自继续原要求，后续日志重读后续号。不自动生成阶段反思。
