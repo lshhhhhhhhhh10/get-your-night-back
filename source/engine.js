@@ -1,9 +1,12 @@
+import {newRescue,advanceRescue,RESCUE_DURATION} from './rescue.js';
+import {tickleNear,tickTickle} from './tickle.js';
+import {floorAt} from './surfaces.js';
 import {locked,puzzleFor,checkPuzzle,LOCKS} from './puzzles.js';
 import {newCat,tickCat,catNear,catInteraction,petCat,tossCatToy,restoreCat} from './cat.js';
 import {CLUES,LURES,WASHER,newNightTools,maskAt,phonePending,clueText} from './night-tools.js';
 import {newMetrics,evaluatePerformance} from './performance.js';
 import {INCIDENTS,incidentRoll,CATCH_DURATION,CATCH_INTRO,CATCH_SWEEP,SLOW_FACTOR} from './incidents.js';
-import {furnitureFor,searchSpots,circleHits,doorShape,PARENT_HOME} from './layout.js';
+import {furnitureFor,searchSpots,circleHits,doorShape,PARENT_HOME,PARENT_BED} from './layout.js';
 import {restingDoor,advanceDoor,hingeCaption} from './door.js';
 export const PRESETS = [
   {name:'第一声吱呀',subtitle:'从客厅找到书房',description:'两个藏点。读床头便条，借长鼾声轻轻通过，再去书房找设备。',width:.22,nightVisit:false,spots:[[3,2,'客厅矮柜'],[16,2,'书房抽屉']],creaks:[[3,9],[15,3]],device:1},
@@ -64,14 +67,14 @@ export class Game{
   }
   start(){this.status='playing';this.active=true;this.say('床头有张便条。靠近后按 E 整理便条，再决定往哪里找。','hint');}
   say(text,type='info'){this.toast=text;this.toastLeft=5;this.events.push({type,text,time:this.time});if(type!=='snore'&&type!=='hint'){this.history.push({text,time:this.realTime});if(this.history.length>12)this.history.shift();}}
-  emit(kind,strength=0,x=this.player.x,z=this.player.z){this.events.push({type:'sound',kind,strength,x,z});}
-  makeNoise(amount,label,kind){
-    const mask=maskAt(this);if(mask)amount*=mask.factor;
+  emit(kind,strength=0,x=this.player.x,z=this.player.z){this.events.push({type:'sound',kind,strength,x,z,surface:floorAt(x,z)});}
+  makeNoise(amount,label,kind,source=this.player){
+    const mask=maskAt(this,source);if(mask)amount*=mask.factor;
     if(amount>10){this.metrics.loudSounds++;this.metrics.noiseBurden+=amount-10;}
-    this.noise=amount;this.noiseAt={...this.player};this.noiseAge=0;this.quiet=0;
+    this.noise=amount;this.noiseAt={x:source.x,z:source.z};this.noiseAge=0;this.quiet=0;
     // 墙和距离影响父母实际听到的声响；声响本身从不直接判负。
-    this.hearNoise(amount,this.player);
-    if(amount>10)this.say(label,'noise');this.emit(kind||(amount>15?'creak':'step'),amount);
+    this.hearNoise(amount,source);
+    if(amount>10)this.say(label,'noise');this.emit(kind||(amount>15?'creak':'step'),amount,source.x,source.z);
   }
   hearNoise(amount,source,force=false){
     if(force)this.quiet=0;
@@ -104,7 +107,10 @@ export class Game{
   catInteraction(){return catInteraction(this);}
   petCat(){return petCat(this);}
   tossCatToy(dx,dz){return tossCatToy(this,dx,dz);}
-  doorNear(){return this.doors.find(d=>!d.open&&distance(d,this.player)<1.2);}
+  tickleNear(){return tickleNear(this);}
+  doorNear(){return this.doors.find(d=>distance(d,this.player)<1.2);}
+  doorDirection(d){return d.progress<=0?1:d.progress>=1?-1:d.direction||1;}
+  reverseDoor(){if(this.mode?.type!=='door')return;const m=this.mode;m.drive={...restingDoor(),direction:-m.drive.direction};m.door.direction=m.drive.direction;}
   coverNear(){return furnitureFor(this.level).find(c=>c.cover&&distance(c,this.player)<1.5);}
   spotNear(){return this.spots.find(s=>distance(s,this.player)<1.2&&!s.searched&&!occluded(this.player,s,this.level,this.doors,true,s.id));}
   canOccupy(x,z){
@@ -129,7 +135,7 @@ export class Game{
     }
     const traveled=distance(p,this.player);this.player.x=p.x;this.player.z=p.z;this.footTile=tile;this.walked+=traveled;
     if(traveled>.00001)this.player.heading=Math.atan2(dx||this.velocity.x,dz||this.velocity.z);
-    if(this.walked>=.72){this.walked%=.72;this.makeNoise(this.hidden?1:3,'轻轻落脚。',this.hidden?'crouchStep':this.player.x>18&&this.player.z<7?'tileStep':'step');}
+    if(this.walked>=.72){this.walked%=.72;this.makeNoise(this.hidden?1:3,'轻轻落脚。',this.hidden?'crouchStep':'step');}
     this.checkSpatialEvents();return traveled>0;
   }
   land(p,noise){this.player.x=p.x;this.player.z=p.z;this.footTile=`${Math.round(p.x)},${Math.round(p.z)}`;this.makeNoise(noise,noise>12?'吱呀——这块木板响了。':'轻轻落脚。');this.checkSpatialEvents();}
@@ -141,9 +147,10 @@ export class Game{
     if(!this.active||this.status!=='playing')return;
     if(this.mode)return;
     if(phonePending(this)){this.night.phone.armed=true;return;}
+    if(this.tickleNear()){this.velocity={x:0,z:0};this.mode={type:'tickle',elapsed:0,pressure:0,moving:false,strokes:0};this.say('轻轻挠脚底，留意呼吸和缩脚。按住 E，松开停下；Esc 收手。','hint');return;}
     if(this.catInteraction()){this.petCat();return;}
     const tool=this.toolNear();if(tool){if(tool.clue){this.mode={type:'puzzle',puzzleId:tool.id,elapsed:0};}else{this.night.lures[tool.id]={timer:2.5,pulses:0,done:false};this.say(`${tool.name} 已定时，2.5 秒后响起。先离开这里。`,'hint');this.emit('switch',5);}return;}
-    const d=this.doorNear();if(d){this.mode={type:'door',door:d,elapsed:0,drive:restingDoor()};this.emit('doorHandle',5,d.x,d.z);this.say('手搭上门把。按住逐渐施力，松手停下，听一听门轴。','hint');return;}
+    const d=this.doorNear();if(d){d.direction=this.doorDirection(d);this.mode={type:'door',door:d,elapsed:0,drive:{...restingDoor(),direction:d.direction}};this.emit('doorHandle',5,d.x,d.z);this.say('手搭上门把。按住施力，松手停下；R 可换开合方向。','hint');return;}
     const s=this.spotNear();if(s){if(locked(this,s.id)){this.mode={type:'puzzle',puzzleId:'lock:'+s.id,elapsed:0};return;}this.mode={type:'search',spot:s,elapsed:0};this.say('轻轻翻找……有动静时按 Esc 立即停下。','hint');return;}
     this.say(this.hasDevice?'设备拿到了，返回发暖光的卧室。':'靠近门或房间里的柜子，再按 E。','hint');
   }
@@ -156,7 +163,7 @@ export class Game{
   pressSpace(){
     if(!this.active||!this.mode)return;
     const m=this.mode;if(m.type!=='step'&&m.type!=='catch')return;
-    if(m.type==='catch'&&m.elapsed<CATCH_INTRO)return;
+    if(m.type==='catch'&&(m.rescue||m.elapsed<CATCH_INTRO))return;
     const success=Math.abs(this.pointer-.5)<=this.preset.width/2;
     if(m.type==='step'){
       this.metrics.steps++;if(success)this.metrics.goodSteps++;this.mode=null;
@@ -170,15 +177,17 @@ export class Game{
   cancel(){this.night.phone.armed=false;this.night.phone.hold=0;if(this.mode?.type==='catch'){this.resolveIncident(false);return;}if(this.mode?.type==='reaction'){this.mode.resume=null;return;}this.mode=null;}
   beginIncident(id,resume=null){
     const event=INCIDENTS[id];this.incidentUsed[id]=true;this.metrics.incidents++;this.pointer=0;this.velocity={x:0,z:0};
-    this.parent.recognition=0;this.mode={type:'catch',incidentId:id,elapsed:0,remaining:CATCH_DURATION,resume};
-    this.say(`${event.start} 亮区内按一次空格接住。`,'warning');this.emit('wobble',15);
+    const source=id==='vase'?{x:9.7,z:2.8}:this.spots.find(s=>s.id===id)||this.player;
+    this.parent.recognition=0;this.mode={type:'catch',incidentId:id,elapsed:0,remaining:RESCUE_DURATION,resume,rescue:newRescue(event.kind,this.seed),noiseSource:{x:source.x,z:source.z}};
+    this.say(`${event.start} 看清物件，用手救场。`,'warning');this.emit('wobble',15);
   }
-  resolveIncident(success){
+  resolveIncident(success,result={}){
     const m=this.mode;if(m?.type!=='catch')return;const id=m.incidentId||'vase',event=INCIDENTS[id];
     this.incidentOutcomes[id]=success?'caught':'fallen';if(success)this.metrics.catches++;
     if(id==='vase')this.vase=success?'caught':'fallen';
-    if(success){this.say(event.success,'good');this.emit('cloth',8);}else if(m.noiseSource){const amount=event.noise*(maskAt(this,m.noiseSource)?.factor||1);this.metrics.loudSounds++;this.metrics.noiseBurden+=Math.max(0,amount-10);this.quiet=0;this.noise=amount;this.noiseAt={...m.noiseSource};this.noiseAge=0;this.hearNoise(amount,m.noiseSource);this.say(`${event.failure} 先听听父母的动静。`,'noise');this.emit(event.sound,amount,m.noiseSource.x,m.noiseSource.z);}else this.makeNoise(event.noise,`${event.failure} 先听听父母的动静。`,event.sound);
-    this.mode={type:'reaction',noiseSource:m.noiseSource,incidentId:id,elapsed:0,success,resume:m.resume};
+    const message=result.text||(success?event.success:event.failure);
+    if(success){this.say(message,'good');this.emit('cloth',8);this.events.push({type:'haptic',kind:'settled',material:event.kind});}else this.makeNoise(event.noise*(result.noiseFactor??1),`${message} 先听听父母的动静。`,event.sound,m.noiseSource||this.player);
+    this.mode={type:'reaction',catCause:m.catCause,rescue:m.rescue,resultText:message,noiseSource:m.noiseSource,incidentId:id,elapsed:0,success,resume:m.resume};
   }
   performance(){return evaluatePerformance(this);}
   checkWin(){if(this.hasDevice&&this.player.z>=11&&this.player.x<=6&&this.status==='playing'){this.status='won';this.mode=null;this.say('安全回到卧室。今晚的时间，拿回来了。','good');this.emit('win',50);}}
@@ -198,11 +207,15 @@ export class Game{
   beginWarning(){if(!['sleep','alert'].includes(this.parent.state))return;
     const p=this.parent,scheduled=this.level===2&&p.a<60;
     p.intent=scheduled?'patrol':'investigate';p.itinerary=scheduled?(this.visits%2?[{x:11,z:9},{x:11,z:16},{x:16,z:12}]:[{x:3,z:9},{x:16,z:3},{x:21,z:9}]):[{...this.inspectionTarget}];
-    this.inspectionTarget={...p.itinerary[0]};p.state='warning';p.phase='rest';p.timer=5;this.say('床板响了……父母翻身，准备起床。还有时间停下或躲藏。','warning');this.emit('bed',55,PARENT_HOME.x,PARENT_HOME.z);
+    this.inspectionTarget={...p.itinerary[0]};p.state='warning';p.phase='rest';p.timer=5;this.say('床板响了……父母翻身，准备起床。还有时间停下或躲藏。','warning');this.emit('bed',55,PARENT_BED.x,PARENT_BED.z);
   }
   patrol(dt){
     const p=this.parent;
-    if(p.openingDoor!=null){const door=this.doors[p.openingDoor];p.phase='opening';door.progress=clamp(door.progress+dt*.72,0,1);if(door.progress===1){door.open=true;p.openingDoor=null;this.emit('latch',12,door.x,door.z);this.setDestination(p.goal);}return;}
+    if(p.openingDoor!=null){const door=this.doors[p.openingDoor];p.phase='opening';
+      if(this.mode?.type==='door'&&this.mode.door===door){this.mode=null;this.say('门另一边有人在推，先松开把手。','warning');}
+      door.direction=1;const next=clamp(door.progress+dt*.72,0,1);
+      if(!circleHits(this.player,.20,doorShape({...door,progress:next}))&&!circleHits(p,.24,doorShape({...door,progress:next})))door.progress=next;
+      if(door.progress===1){door.open=true;p.openingDoor=null;this.emit('latch',12,door.x,door.z);this.setDestination(p.goal);}return;}
     if(p.route.length){
       const dest=p.route[0],dx=dest.x-p.x,dz=dest.z-p.z,d=Math.hypot(dx,dz),heading=Math.atan2(dx,dz),diff=Math.atan2(Math.sin(heading-p.heading),Math.cos(heading-p.heading));p.heading+=clamp(diff,-dt*3,dt*3);
       const speed=p.state==='returning'?1.15:.95,step=Math.min(d,speed*dt),next=d?{x:p.x+dx/d*step,z:p.z+dz/d*step}:{x:p.x,z:p.z};
@@ -223,11 +236,11 @@ export class Game{
     const realDt=Math.min(dt,.06),cinematic=['catch','reaction'].includes(this.mode?.type);this.realTime+=realDt;dt=realDt*(cinematic?SLOW_FACTOR:1);this.time+=dt;this.moveCooldown=Math.max(0,this.moveCooldown-dt);this.noiseAge+=dt;this.quiet+=dt;this.toastLeft-=dt;
     if(this.stepTransit){const s=this.stepTransit;s.elapsed+=dt;const t=clamp(s.elapsed/.25,0,1),u=t*t*(3-2*t);this.player.x=s.from.x+(s.target.x-s.from.x)*u;this.player.z=s.from.z+(s.target.z-s.from.z)*u;if(t===1){this.stepTransit=null;this.checkSpatialEvents();}}
     if(!cinematic)this.pointer=.5+.48*Math.sin(this.time*3.8);const p=this.parent;
-    if(this.quiet>3)p.a=Math.max(0,p.a-dt*2.1);
-    if(p.state==='sleep'&&p.a>=30){p.state='alert';this.say('鼾声停了。父母翻了个身，先别急。','warning');this.emit('bed',35,PARENT_HOME.x,PARENT_HOME.z);}
+    if(this.quiet>3)p.a=Math.max(0,p.a-dt*2.1);if(this.mode?.type!=='tickle')p.tickleHeat=Math.max(0,(p.tickleHeat||0)-dt*.025);
+    if(p.state==='sleep'&&p.a>=30){p.state='alert';this.say('鼾声停了。父母翻了个身，先别急。','warning');this.emit('bed',35,PARENT_BED.x,PARENT_BED.z);}
     if(p.state==='alert'&&p.a<20){p.state='sleep';this.say('鼾声重新响起，房间慢慢安静下来。','good');}
     if((p.state==='sleep'||p.state==='alert')&&(p.a>=60||this.time>=this.nextVisit)){this.beginWarning();this.nextVisit=Infinity;}
-    if(p.state==='sleep'&&this.time-this.lastSnore>6){this.lastSnore=this.time;this.emit('snore',25,PARENT_HOME.x,PARENT_HOME.z);}
+    if(p.state==='sleep'&&this.time-this.lastSnore>6){this.lastSnore=this.time;this.emit('snore',25,PARENT_BED.x,PARENT_BED.z);}
     if(p.state==='warning'){p.timer-=dt;if(p.timer<=0){p.state='checking';this.setDestination(p.itinerary.shift()||this.inspectionTarget);this.say('咔哒。脚步从父母房间出来了。','warning');}}
     if(p.state==='checking'||p.state==='returning'){
       this.patrol(dt);
@@ -240,12 +253,15 @@ export class Game{
     this.tickNightTools(dt,input,cinematic);
     tickCat(this,dt);
     const m=this.mode;if(m){m.elapsed+=cinematic?realDt:dt;
+      if(m.type==='tickle')tickTickle(this,m,input,dt);
       if(m.type==='door'){
-        const d=m.door,drive=m.drive??=restingDoor();advanceDoor(d,drive,input,dt,this.level);
+        const d=m.door,drive=m.drive??={...restingDoor(),direction:d.direction||1},before=d.progress,clock=drive.noiseClock,energy=drive.noiseEnergy;
+        advanceDoor(d,drive,input,dt,this.level);drive.blocked=false;
+        if(d.progress!==before&&(circleHits(this.player,.20,doorShape(d))||(['checking','returning'].includes(p.state)&&circleHits(p,.24,doorShape(d))))){d.progress=before;d.open=before===1;drive.blocked=true;drive.moving=false;drive.rate=0;drive.roughness=0;drive.noiseClock=clock;drive.noiseEnergy=energy;}
         if(drive.moving){this.metrics.doorSeconds+=dt;this.metrics.quietDoorSeconds+=dt*(1-drive.roughness);
           if(drive.noiseClock>=.75){this.makeNoise(drive.noiseEnergy/drive.noiseClock,'门轴发出了一阵咯吱声。','hingeMotion');drive.noiseClock=0;drive.noiseEnergy=0;}
         }
-        if(d.progress>=1){d.open=true;this.mode=null;this.say('门开了。停一拍，听听有没有回应。','good');this.emit('latch',12);}
+        if(drive.moving&&(drive.direction===-1?d.progress<=0:d.progress>=1)){d.open=d.progress===1;this.mode=null;this.say(d.open?'门开了。停一拍，听听有没有回应。':'门轻轻合上了。听听门外的动静。','good');this.emit('latch',12,d.x,d.z);}
       }
       if(m.type==='search'&&m.elapsed>=(m.nextSound||0)){m.nextSound=m.elapsed+1.2;this.emit('search',8);}
       if(m.type==='search'&&m.elapsed>=2.2&&!this.incidentUsed[m.spot.id]&&INCIDENTS[m.spot.id]){
@@ -253,7 +269,12 @@ export class Game{
       }
       if(m.type==='search'&&m.elapsed>=6&&m.spot.id==='study-shelf'){this.mode={type:'puzzle',puzzleId:'shelf-note',elapsed:0};return;}
       if(m.type==='search'&&m.elapsed>=6){m.spot.searched=true;this.mode=null;if(m.spot.device){this.hasDevice=true;this.night.phone={state:'warning',timer:6,hold:0,armed:false,rings:0,lastCue:-1};this.say('找到了！屏幕亮了，有来电预兆。停下，按住 E 1.2 秒静音。','good');this.emit('found',45);}else this.say('这里没有设备，换个藏点看看。','info');}
-      if(m.type==='catch'){m.remaining=Math.max(0,CATCH_DURATION-m.elapsed);this.pointer=clamp((m.elapsed-CATCH_INTRO)/CATCH_SWEEP,0,1);if(m.remaining<=0)this.resolveIncident(false);}
+      if(m.type==='catch'){
+        m.remaining=Math.max(0,(m.rescue?RESCUE_DURATION:CATCH_DURATION)-m.elapsed);
+        if(m.rescue){const result=advanceRescue(m.rescue,input,realDt,m.elapsed);if(result.contact)this.emit('catchTouch',4);if(result.contact||result.contacts)this.events.push({type:'haptic',kind:'contact',material:m.rescue.kind,count:result.contacts||1});if(result.clink)this.makeNoise(16,'盒盖叮了一声，左手轻轻压住它。','metalDrop',m.noiseSource);if(result.done)this.resolveIncident(result.success,result);}
+        else this.pointer=clamp((m.elapsed-CATCH_INTRO)/CATCH_SWEEP,0,1);
+        if(this.mode===m&&m.remaining<=0)this.resolveIncident(false);
+      }
       if(m.type==='reaction'&&m.elapsed>=.7){const r=m.resume;this.mode=r?{type:'search',spot:this.spots[r.spotIndex],elapsed:r.elapsed,nextSound:r.nextSound}:null;if(r)this.say('继续轻轻翻找……Esc 可以停下。','hint');}
     }
   }
@@ -261,8 +282,8 @@ export class Game{
     const fields=['cat','night','metrics','seed','incidentUsed','incidentOutcomes','realTime','level','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','pointer','lastSnore','lastFoot','inspectionTarget','safeSteps','walked','footTile','stepTransit','status'];
     const data=Object.fromEntries(fields.map(k=>[k,structuredClone(this[k])]));
     data.nextVisit=Number.isFinite(this.nextVisit)?this.nextVisit:null;
-    data.doors=this.doors.map(d=>({open:d.open,progress:d.progress}));data.searched=this.spots.map(s=>s.searched);
-    data.mode=this.mode?{puzzleId:this.mode.puzzleId,noiseSource:this.mode.noiseSource,type:this.mode.type,incidentId:this.mode.incidentId,resume:this.mode.resume,success:this.mode.success,elapsed:this.mode.elapsed,remaining:this.mode.remaining,target:this.mode.target,tile:this.mode.tile,continuous:this.mode.continuous,doorIndex:this.doors.indexOf(this.mode.door),spotIndex:this.spots.indexOf(this.mode.spot)}:null;
+    data.doors=this.doors.map(d=>({open:d.open,progress:d.progress,direction:d.direction||1}));data.searched=this.spots.map(s=>s.searched);
+    data.mode=this.mode?{catCause:this.mode.catCause,rescue:this.mode.rescue?structuredClone(this.mode.rescue):undefined,resultText:this.mode.resultText,strokes:this.mode.strokes,puzzleId:this.mode.puzzleId,noiseSource:this.mode.noiseSource,type:this.mode.type,incidentId:this.mode.incidentId,resume:this.mode.resume,success:this.mode.success,elapsed:this.mode.elapsed,remaining:this.mode.remaining,target:this.mode.target,tile:this.mode.tile,continuous:this.mode.continuous,doorIndex:this.doors.indexOf(this.mode.door),spotIndex:this.spots.indexOf(this.mode.spot)}:null;
     return data;
   }
   restore(data){
@@ -285,7 +306,9 @@ export class Game{
     if(!this.canOccupy(this.player.x,this.player.z)){this.reset(data.level);return false;}
     if(data.mode){this.mode={...data.mode};if(this.mode.type==='catch'&&!this.mode.incidentId){this.mode.incidentId='vase';this.mode.elapsed=0;this.mode.remaining=CATCH_DURATION;this.metrics.incidents++;}if(this.mode.type==='door')this.mode.door=this.doors[this.mode.doorIndex];if(this.mode.type==='search')this.mode.spot=this.spots[this.mode.spotIndex];if(this.mode.type==='door'&&!this.mode.door||this.mode.type==='search'&&!this.mode.spot)this.mode=null;}
     if(this.mode?.type==='puzzle'&&!puzzleFor(this,this.mode.puzzleId))this.mode=null;
-    if(this.mode?.type==='door')this.mode.drive=restingDoor();
+    if(this.mode?.type==='door')this.mode.drive={...restingDoor(),direction:this.mode.door.direction||1};
+    if(this.mode?.rescue)Object.assign(this.mode.rescue,{left:0,right:0,release:0,grace:.65});
+    if(this.mode?.type==='tickle'){if(!['sleep','alert'].includes(this.parent.state))this.mode=null;else Object.assign(this.mode,{pressure:0,moving:false,stroke:0});}
     this.cat=restoreCat(this,data.cat);
     this.status='playing';this.active=false;this.velocity={x:0,z:0};return true;
   }

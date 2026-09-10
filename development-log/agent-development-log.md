@@ -1155,3 +1155,108 @@ AGENTS.md、PROJECT_STATUS.md、brief.md、development-log/brief-original.md、R
 原稿副本 SHA-256 与桌面原件一致；剥离本轮插入块后可精确恢复旧工作简报；既有日志保留，仅追加本条；文档相对链接和差异检查通过。只读核对 Pages 时游戏基准 08ceb32 已构建成功。状态页明确标注 93 项规则检查与浏览器通关是上轮实际结果，本轮没有重跑游戏测试；保留实体手柄未实测、第三关新解谜版整局自动验证未完成及人类体验未测量等边界。
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 本轮维护规则由用户直接要求，无待批准的文档同步或新增核心设计。等待用户下一项项目任务，后续每轮按新规则维护；尚未请求阶段反思，不代写学生回答。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 39 — Raw Interaction Log
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** 分步骤扩展夜间互动：关门、空间声音、家长互动、手柄救场
+**Current Goal:** 完成用户本轮五项功能，并保持取物返程及声音驱动父母行为
+**Git Tag / Commit:** 基准 456ef66；目标 v0.12.0；本条随本轮提交保存，未生成时不预填哈希
+### Student Prompt
+“现在的开门玩法我很喜欢，新增关门功能；从网络收集真实的声音素材，完善脚步声质感（包括不同材质地板的声音变化），并增加听声辨位，以及声音远近；新增给父母换皮肤的功能；新增给熟睡中的父母挠痒痒的功能；完善并优化花瓶掉落，文具掉落等的玩法，现在的玩法有点单一，你结合手柄的功能想一些很有创意的。分步骤完成以上任务”。
+### Agent Response Summary
+按四步实现：1. 沿用无速度条门轴施力，增加关门、反向、防夹与半关续玩；2. 获取三种地面实录，各裁四个单步，接入 HRTF、距离衰减、遮挡低通及短时方向字幕；3. 衣柜增加家长角色选择，床边轻挠有动作与逐步醒来反馈；4. 双手托稳花瓶、托底压铁盒盖、袖口止住叉子颤动、按滚动路径拦三枝铅笔。开门原手感和取物返程胜负保持。
+### AI Design Assumptions (REQUIRED — do not skip)
+用户明确授权以上功能方向及创意细化；R/L1 反向、九套家长皮肤复用、挠脚底、具体动作、阈值、实录切片与声音处理均为 AI 实施选择，非用户逐项确认。当前游戏只有一位家长实体，换装作用于该角色，没有擅自增加第二名巡查者。挠痒是可选恶作剧，不给奖励，不改变胜负；持续用力先停鼾再起床预警。新救场以手的位置、双扳机支撑和物件轨迹为依据，慢动作最长 10 秒，世界按原比例继续；旧存档中途的指针接物保留至结束。铅笔部分拦住会按剩余数量减轻落地声，不额外增加积分系统。震动只使用标准轻重马达 API，不声称有自适应扳机或陀螺仪。
+### Development Action
+先读取长期规则、当前状态、简报相关索引并确认工作区干净。从作者页核实 CC0，下载原始木地板 WAV、瓷砖和地毯公开 HQ MP3 试听，裁剪、滤波、调整电平并在仓库记录许可。为新动作补逻辑、输入释放、存档兼容和碰撞检查；扩展实际场景挠痒双手与独立救场手部、轨迹、止响布料和盒盖。首轮浏览器截图发现方块手及低处物件被面板遮挡，随后重做手部并调整镜头和窄屏布局。
+### Files / Mechanics Changed
+source/door.js、engine.js、main.js、audio.js、skins.js、wardrobe.js、skin-model.js、cinematic.js、cat.js、persistence.js、performance.js；新增 surfaces.js、spatial-audio.js、tickle.js、tickle-detail.js、rescue.js、haptics.js、脚步处理脚本与对应测试；game.html、assets/style.css、12 个实录切片、音频来源和构建。项目状态、简报、README、首页与制作过程在最终验证后同步。
+### Immediate Result
+此时 111 项规则检查与正式构建通过。Chrome 定点验证关门松手、反向、暂停、床边轻挠、家长奶蛙换装及刷新独立保存、四种救场模拟标准扳机操作，无脚本或资源错误。离线音频核验：19 个录音可加载，同一木地板脚步转头后左右能量互换，近处 RMS 约为远处 5 倍，隔墙衰减正常，12 个切片无削波。测试中曾出现旧指针断言过时、浮点精确比较误差，已按新行为改断言并保留旧存档兼容检查；没有修改父母难度使测试通过。正在完成改后画面、窄屏、断线和续玩边界复查，尚未声明发布或本轮完整通关。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+没有待批准的新增核心改向，继续完成用户已授权范围的验证与文档同步。等待用户之后试玩声音质感、床边喜剧效果和实体手柄操作；未请求或代写学生阶段反思。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 40 — Raw Interaction Log
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** v0.12 最终输入、声音和页面复核
+**Current Goal:** 验证新增互动与取物返程相容，保存可发布版本
+**Git Tag / Commit:** 基准 456ef66；本条与 v0.12.0 功能提交一同保存，尚未生成时不预填哈希
+### Student Prompt
+继续完成本轮关门、真实声音、家长换装与挠痒、手柄创意救场的分步骤任务。
+### Agent Response Summary
+完成真实键盘四种救场，修复窄屏面板、袖口连接和落地花瓶贴地；让部分拦笔的实际声音、噪声评分及家长听觉共用同一声音来源和强度。补上暂停／失焦后旧按键重复不重新施力，避免救场结束后长按移手键变为继续走路；床边猫靠近时不抢走挠痒入口。
+### AI Design Assumptions (REQUIRED — do not skip)
+这些是已授权功能的实现修复，无新增核心设计决定。继续沿用原 GitHub Pages 公开更新授权；本轮只完整复跑第一关，其余用针对性检查，不把历史第二、三关结果冒充本轮复测。
+### Development Action
+正式构建；Chrome 实际键盘第一关完整解谜、取物、静音和返程；真实键盘及模拟手柄检查四种救场、半途保存、暂停恢复、失焦及断线、门两侧操作、家长独立换装。离线重跑三种脚步与方位／距离对照。复核 1440／390 宽页面和图片／相对链接，保存两张本轮实景，更新当前状态、简报替代索引、README、首页、制作过程与素材来源。发布前 fetch 确认远端与基准一致。
+### Files / Mechanics Changed
+本轮相关源码、构建、两张实景图片及文档；沿用 Interaction 39 的功能范围。未修改 AGENTS.md、原始简报逐字存档或既有日志正文。
+### Immediate Result
+111 项规则检查通过，最后床边猫交互修复的 5 项专项检查通过；正式构建成功。第一关 100 分完整返程，无脚本错误。门／挠痒暂停后的重复 keydown 不施力，松开后重新按下恢复动作。19 个录音载入，空间脚步对照无削波，近处 RMS 约为远处 5 倍；四种救场键鼠／模拟手柄、暂停与存档边界通过。窄屏首次检查因面板偏移失败，修复后通过。原始简报哈希未变，既有日志是追加后文件的完整前缀，文档差异检查通过。尚待推送后实际 Pages 核对；实体 USB 手柄、真人听感、第二／三关本轮完整流程未验证。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+没有待批准的核心改向，继续完成已授权发布及线上核对。用户尚未试玩本轮版本，声音质感、实体震动和喜剧效果等待后续反馈；本轮不自动生成或代写阶段反思。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 41 — Raw Interaction Log
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** 发布审批被拒，保留本地完整结果
+**Current Goal:** 如实交付已完成的本地版本，并取得明确发布授权
+**Git Tag / Commit:** 当前 HEAD 仍为 456ef66；本轮没有生成新提交
+### Student Prompt
+本轮原功能任务继续；用户尚未额外明确批准本次提交与公开发布。
+### Agent Response Summary
+游戏、针对性验证和文档已完成。根据历史公开更新授权尝试保存并推送，但自动审批拒绝组合命令，不能声称已上线，也不绕过拒绝。把当前状态和制作过程改为本地完成、等待发布。
+### AI Design Assumptions (REQUIRED — do not skip)
+AI 原判断历史持续更新授权涵盖本轮发布；自动审批不接受该证据，要求当前可信用户消息明确授权。没有因审批拒绝撤回或改变已完成的功能。
+### Development Action
+新增文件及改动中常见凭据模式扫描无匹配；尝试 git add／git commit／git push origin main，工具在执行前拒绝。只读检查确认 HEAD 不变、工作区改动完整保留。更新 PROJECT_STATUS.md 与制作过程，并记录实际拒绝。
+### Files / Mechanics Changed
+PROJECT_STATUS.md、process.html、development-log/agent-development-log.md；游戏源码、构建和素材保持已验证结果，无本轮新提交或推送。
+### Immediate Result
+本地 v0.12.0 已完成；线上仍为基准 456ef66 对应的旧游戏。自动审批理由：默认 main 分支的大量改动会触发公开 Pages 发布，当前可信用户消息未明确授权此次提交和发布。没有尝试绕过审批。待用户明确授权后再保存、推送并核对真实线上版本。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+待用户回答：是否允许将本轮已完成的 v0.12.0 提交并推送到现有公开仓库 main，更新 GitHub Pages？这是发布授权，不是重新确认已经完成的玩法方向。未请求或代写学生反思。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 42 — Raw Interaction Log
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** PS5 自适应扳机和差异化震动
+**Current Goal:** 为已有夜探动作增加触觉，保留原玩法与上轮未提交成果
+**Git Tag / Commit:** 基准 456ef66；本地目标 v0.13.0，尚未生成本轮提交
+### Student Prompt
+“再为 ps5 手柄增加自适应扳机功能以及震动功能，可以多找几个可以的用途，包括但不限于”：开关门发涩时不均匀轻颤、收力减弱；落脚木板轻震、瓷砖短促、地毯很弱；接住物件瞬间短脉冲，花瓶与铅笔采用不同力度。
+### Agent Response Summary
+区分标准 Gamepad 震动与 DualSense 扳机阻力，核对 Chrome WebHID、MDN、原作者示例、Linux 驱动及十区反馈协议。增加 USB 设备主动连接、双强度开关与短测试；门轴涩点、花瓶双手托重和缓放卸力、铁盒压盖、叉子袖口止响、挠痒使用轻阻力。材质脚步、逐枝铅笔接触、手机来电／静音、摸猫、丢球、翻抽屉与开锁有不同短反馈。
+### AI Design Assumptions (REQUIRED — do not skip)
+用户明确授权自适应扳机、震动和额外合适用途；USB 首发、DualSense / Edge 描述符白名单、阻力上限第五档、震动默认 75%／扳机 60%、各触觉曲线与额外用途为 AI 实施选择。没有新增评分、判定、噪声、游戏难度或父母透视提示；没有安装本机代理或添加蓝牙报文。浏览器需要玩家主动选择设备，不能用普通震动冒称自适应阻力。用户本轮没有批准上轮被拒的公开发布。
+### Development Action
+保留完整未提交工作区，更新触觉模块；新增独立协议层与反馈映射，USB 同一报文管理轻重马达和 L2/R2，避免两条输出竞争。为每枝铅笔接触增加独立触觉事件，门轴已有涩点同步提供阻力数据；输出限频、合并、优先与停止队列，释放后不重放旧效果。设置与说明同步；核对真实浏览器的计时器、设备错误、输入持续状态及页面布局。
+### Files / Mechanics Changed
+新增 source/dualsense.js、feedback-profiles.js、tests/haptics.test.js、docs/controller-feedback.md；更新 haptics.js、main.js、engine.js、door.js、rescue.js、persistence.js 及设置测试，game.html、assets/style.css、assets/build/game.js。更新 PROJECT_STATUS.md、brief.md、README.md、index.html、process.html 与本日志。AGENTS.md、原始逐字简报及旧日志不改。
+### Immediate Result
+124 项自动检查和正式构建通过。Chrome 模拟 DualSense/WebHID 通过主动选择、取消／拒绝、双测试按钮、失焦停止、USB 协议与门交互、四种救场、暂停后长按释放、断线与原生震动回退。实际摇杆移动三材质脚步输出为木 65 ms、瓷砖 32 ms、地毯 28 ms，地毯幅度更低。双强度设置刷新保存、1440／390 宽设置和三页相对链接／资源检查通过。首轮浏览器出现 Illegal invocation，原因是原生计时器绑定为类对象方法；改成包装调用后通过。另一个专项断言只等待一轮微任务、未等到 Promise 拒绝处理，改为等待处理完成；未改难度。未连接实体 USB，未重跑整局，未重新尝试提交／推送或声称上线。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+功能方向无待确认改向；等待用户之后实体手柄试玩阻力和震动，再据反馈调节曲线。上轮提交到公开 main 并发布的授权问题仍未回答，当前保留本地完整版本；本轮不代写或自动起草阶段反思。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 43 — Raw Interaction Log
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** 两轮成果合并公开发布
+**Current Goal:** 将 v0.12 夜间互动与 v0.13 PS5 触觉完整提交并更新现有 GitHub Pages
+**Git Tag / Commit:** 基准 456ef66；本条随两轮成果合并提交保存，尚未生成时不预填哈希
+### Student Prompt
+“两轮成果全部公开”。
+### Agent Response Summary
+用户已明确授权本次提交与公开发布，上轮自动审批指出的授权缺失已解除。将两轮完整源码、静态构建、音频与实景素材、操作说明和开发文档一并保存到原公开仓库 main，随后核对实际线上版本与新增操作。
+### AI Design Assumptions (REQUIRED — do not skip)
+将“两轮成果全部公开”理解为对当前已完成 v0.12 与 v0.13 工作区成果的提交、推送和原 GitHub Pages 更新授权。不视为用户逐项确认 AI 设计参数，也不扩大到其他项目或发布渠道；不新增玩法、不代写反思。
+### Development Action
+读取长期规则、状态、当前简报索引及最后日志，确认原始成果仍完整保留。fetch 显示本地与远端 main 基准一致，无他人新提交需要合并；差异检查通过，54 个改动／新增文件的常见凭据模式扫描无匹配。保留已通过构建，更新状态和页面的授权／发布说明，再进行提交与推送。
+### Files / Mechanics Changed
+公开前两轮成果的全部游戏、素材与文档文件；本轮只改发布状态及追加本日志，未改变游戏逻辑或重做素材。
+### Immediate Result
+远端无分歧，待保存与推送。前轮 124 项本地检查和构建结果沿用，不冒称本轮重跑；本轮后续将核对 Pages 构建提交、资源与相关交互，不把定点验证冒充整局或实体 USB 实测。构建 SHA-256 为 dd5946456b93215b8051b0e56971cc4580a783339bf992c461c92e58b3e6b6bb。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+发布授权已由用户明确给出，无待确认的发布步骤；继续执行，完成后报告真实公开网址及线上核对结果。实体手感仍需用户后续试玩；不自动生成阶段反思。

@@ -2,9 +2,11 @@ import * as THREE from 'three';
 import {SKINS,skinById} from './skins.js';
 import {createSkinModel,disposeSkinModel,poseSkin} from './skin-model.js';
 export class Wardrobe{
-  constructor({loadTemplate,equipped,onEquip,onClose}){
+  constructor({loadTemplate,equipped,parentEquipped='scarf',onEquip,onClose}){
     this.loadTemplate=loadTemplate;this.equipped=equipped;this.onEquip=onEquip;this.onClose=onClose;this.selected=equipped;this.ready=false;this.token=0;this.angle=.22;
+    this.role='player';this.equippedByRole={player:equipped,parent:parentEquipped};this.busy=false;
     this.root=document.querySelector('#skin-screen');this.canvas=document.querySelector('#skin-preview');
+    for(const b of document.querySelectorAll('[data-wardrobe-role]'))b.onclick=()=>this.setRole(b.dataset.wardrobeRole);
     const list=document.querySelector('#skin-list');
     for(const skin of SKINS){const b=document.createElement('button');b.className='skin-card';b.dataset.skin=skin.id;b.innerHTML=`<img src="assets/skins/${skin.id}.png" alt="" width="240" height="260"><span><strong>${skin.name}</strong><small>${skin.tag}</small></span><i aria-hidden="true">✓</i>`;b.onclick=()=>this.select(skin.id);list.append(b);}
     document.querySelector('#skin-close').onclick=()=>this.close();
@@ -26,8 +28,10 @@ export class Wardrobe{
     this.camera=new THREE.PerspectiveCamera(34,1,.05,20);
   }
   async open(){this.root.hidden=false;await this.select(this.equipped);}
+  async setRole(role){if(this.busy||!['player','parent'].includes(role))return;this.role=role;this.equipped=this.equippedByRole[role];await this.select(this.equipped);}
   close(){this.token++;this.root.hidden=true;this.dragX=undefined;this.onClose();}
   async select(id){
+    if(this.busy)return;
     const skin=skinById(id),token=++this.token;this.selected=skin.id;this.ready=false;this.angle=.22;if(this.model)this.model.visible=false;
     document.querySelector('#skin-save-status').textContent='当前穿着：'+skinById(this.equipped).name+'。预览不会自动换装。';
     document.querySelector('#skin-name').textContent=skin.name;document.querySelector('#skin-description').textContent=skin.description;
@@ -42,12 +46,16 @@ export class Wardrobe{
     }catch{if(token!==this.token)return;document.querySelector('#skin-load-status').textContent='这套外观没能载入，请重试。当前穿着保持不变。';document.querySelector('#skin-retry').hidden=false;this.updateCards();}
   }
   updateCards(){
+    for(const b of document.querySelectorAll('[data-wardrobe-role]')){b.setAttribute('aria-pressed',String(b.dataset.wardrobeRole===this.role));b.disabled=this.busy;}
     for(const b of document.querySelectorAll('[data-skin]')){b.setAttribute('aria-pressed',String(b.dataset.skin===this.selected));b.classList.toggle('equipped',b.dataset.skin===this.equipped);b.setAttribute('aria-label',`${skinById(b.dataset.skin).name}${b.dataset.skin===this.equipped?'，正在穿着':''}`);}
-    const button=document.querySelector('#skin-equip');button.disabled=!this.ready||this.selected===this.equipped;button.textContent=this.selected===this.equipped?'正在穿着':'穿上这套';
+    const button=document.querySelector('#skin-equip');button.disabled=this.busy||!this.ready||this.selected===this.equipped;button.textContent=this.busy?'正在换装……':this.selected===this.equipped?'正在穿着':this.role==='parent'?'给家长穿上':'穿上这套';
   }
   async equip(){
-    if(!this.ready||this.selected===this.equipped)return;
-    const id=this.selected;await this.onEquip(id);this.equipped=id;this.updateCards();
+    if(this.busy||!this.ready||this.selected===this.equipped)return;
+    const id=this.selected,role=this.role;this.busy=true;this.updateCards();
+    try{await this.onEquip(id,role);this.equipped=id;this.equippedByRole[role]=id;}
+    catch{document.querySelector('#skin-save-status').textContent='换装没有完成，当前穿着保持不变，请重试。';}
+    finally{this.busy=false;this.updateCards();}
   }
   rotate(delta){this.angle+=delta;}
   render(now){

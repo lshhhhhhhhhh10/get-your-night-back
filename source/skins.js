@@ -1,4 +1,5 @@
 export const SKIN_KEY='night-back:skin:v1';
+export const PARENT_SKIN_KEY='night-back:parent-skin:v1';
 export const SKINS=[
   {id:'nailong',name:'奶龙',tag:'圆肚子夜游',description:'奶黄色的小恐龙，蹑手蹑脚也藏不住圆肚皮。',model:'assets/models/peak-character.glb',color:'#f4c545',source:'全身图片参考 · 自制低多边形改编'},
   {id:'naiwa',name:'奶蛙',tag:'奶白色的呆萌',description:'圆眼睛、软肚子。按你选择的奶白色造型改编。',model:'assets/models/peak-character.glb',color:'#f1edd4',source:'全身参考与学生配色选择 · 自制改编'},
@@ -11,5 +12,5 @@ export const SKINS=[
   {id:'nightcap',name:'晚安星星',tag:'睡帽还没摘',description:'星星睡帽轻轻晃。夜晚还不想说晚安。',model:'assets/models/peak-character.glb',color:'#8aaacc',source:'附件角色改装 · 自制睡帽'}
 ];
 export const skinById=id=>SKINS.find(s=>s.id===id)||SKINS.find(s=>s.id==='scarf');
-export function readSkin(storage){try{return skinById(JSON.parse(storage.getItem(SKIN_KEY)||'null')?.id).id;}catch{return 'scarf';}}
-export function saveSkin(storage,id){if(!SKINS.some(s=>s.id===id))return false;try{storage.setItem(SKIN_KEY,JSON.stringify({id}));return true;}catch{return false;}}
+export function readSkin(storage,role='player'){try{return skinById(JSON.parse(storage.getItem(role==='parent'?PARENT_SKIN_KEY:SKIN_KEY)||'null')?.id).id;}catch{return 'scarf';}}
+export function saveSkin(storage,id,role='player'){if(!SKINS.some(s=>s.id===id))return false;try{storage.setItem(role==='parent'?PARENT_SKIN_KEY:SKIN_KEY,JSON.stringify({id}));return true;}catch{return false;}}

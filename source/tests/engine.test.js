@@ -1,3 +1,4 @@
+import {finishRescue} from './rescue-helper.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Game,PRESETS,wall,solid,occluded,distance} from '../engine.js';
@@ -14,7 +15,7 @@ test('关门阻挡连续移动，打开后可以穿过',()=>{const g=new Game();
 test('家具和墙确实遮挡视线',()=>{assert.equal(occluded({x:1.13,z:6},{x:1.13,z:8},1),true);assert.equal(occluded({x:3,z:6},{x:3,z:8},1),false);assert.equal(occluded({x:7,z:6},{x:3,z:6},1),true);});
 test('暂停不推进时间和巡查',()=>{const g=new Game(2);g.start();g.active=false;tick(g,40);assert.equal(g.time,0);assert.equal(g.parent.state,'sleep');});
 test('第三夜的起夜有预警，第二夜不会定时起夜',()=>{const g=new Game(2);g.start();tick(g,32.2);assert.equal(g.parent.state,'warning');const b=new Game(1);b.start();tick(b,40);assert.equal(b.parent.state,'sleep');});
-test('花瓶预警后可以接住；失手不直接判负',()=>{const g=new Game(2);g.start();g.land({x:10,z:3},3);assert.equal(g.vase,'wobbling');tick(g,.5);g.pointer=.5;g.pressSpace();assert.equal(g.vase,'caught');const b=new Game(2);b.start();b.land({x:10,z:3},3);tick(b,4.7);assert.equal(b.vase,'fallen');assert.equal(b.status,'playing');});
+test('花瓶预警后可以接住；失手不直接判负',()=>{const g=new Game(2);g.start();g.land({x:10,z:3},3);assert.equal(g.vase,'wobbling');tick(g,.5);finishRescue(g);assert.equal(g.vase,'caught');const b=new Game(2);b.start();b.land({x:10,z:3},3);tick(b,6);assert.equal(b.vase,'fallen');assert.equal(b.status,'playing');});
 test('重试清空搜索、设备、警觉、门和已发生的物件事件',()=>{const g=new Game(2);g.start();g.hasDevice=true;g.parent.a=90;g.doors[0].open=true;g.vase='fallen';g.spots[0].searched=true;g.reset(2);assert.equal(g.hasDevice,false);assert.equal(g.parent.a,0);assert.equal(g.doors[0].open,false);assert.equal(g.vase,'stable');assert.equal(g.spots[0].searched,false);});
 test('低矮家具要求蹲下，蹲下也不会让同侧玩家隐身',()=>{const g=new Game(1);g.start();g.parent={...g.parent,x:1.13,z:6,heading:0};g.player={x:1.13,z:8};assert.equal(g.visible(),true);g.hidden=true;assert.equal(g.visible(),false);g.player={x:1.13,z:5.3};g.parent.heading=Math.PI;assert.equal(g.visible(),true);});
 

@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {Game,canStand} from '../engine.js';
+import {readSkin,saveSkin} from '../skins.js';
+const tick=(g,t,input={})=>{for(let n=0;n<t;n+=.05)g.tick(.05,input);};
+const near=()=>{const g=new Game();g.start();g.player={x:7.3,z:7.2};g.cat.state='rest';assert.ok(canStand(g.player.x,g.player.z));return g;};
+test('家长与玩家换装独立保存，不改变游戏状态',()=>{const m=new Map(),storage={getItem:k=>m.get(k),setItem:(k,v)=>m.set(k,v)},g=near(),before=g.serialize();saveSkin(storage,'nailong');saveSkin(storage,'nightcap','parent');assert.equal(readSkin(storage),'nailong');assert.equal(readSkin(storage,'parent'),'nightcap');assert.deepEqual(g.serialize(),before);});
+test('熟睡时床尾可挠，隔墙、离床或起身后没有挠痒入口',()=>{const g=near();assert.ok(g.tickleNear());Object.assign(g.cat,{x:g.player.x,z:g.player.z,state:'rub'});g.action();assert.equal(g.mode.type,'tickle');g.cancel();g.parent.state='checking';assert.equal(g.tickleNear(),false);g.parent.state='sleep';g.player={x:7,z:8.9};assert.equal(g.tickleNear(),false);});
+test('轻挠有反应，松手立即停止累积；暂停和续玩不会延续施力',()=>{const g=near();g.action();assert.equal(g.mode.type,'tickle');tick(g,2,{e:true});assert.ok(g.parent.tickleHeat>.2);assert.equal(g.parent.state,'sleep');const heat=g.parent.tickleHeat;tick(g,.5);assert.equal(g.parent.tickleHeat,heat);assert.equal(g.mode.moving,false);g.active=false;tick(g,1,{e:true});assert.equal(g.parent.tickleHeat,heat);const h=new Game();assert.ok(h.restore(g.serialize()));assert.equal(h.mode.moving,false);assert.equal(h.mode.pressure,0);assert.equal(h.active,false);});
+test('用力挠先停鼾、后起身预警，世界继续且不会直接判负',()=>{const g=near();g.action();tick(g,1,{ticklePressure:1,tickleStroke:1});assert.equal(g.parent.state,'alert');assert.equal(g.mode.type,'tickle');assert.ok(g.events.some(e=>e.kind==='bed'));tick(g,1,{ticklePressure:1,tickleStroke:-1});assert.equal(g.parent.state,'warning');assert.equal(g.mode,null);assert.equal(g.status,'playing');assert.ok(g.parent.timer>4);});
+test('只有扳机没有挠动不会累积，取消不会奖励或修改胜负条件',()=>{const g=near();g.action();tick(g,1,{ticklePressure:.7,tickleStroke:0});assert.equal(g.parent.tickleHeat||0,0);g.cancel();assert.equal(g.mode,null);assert.equal(g.metrics.catches,0);assert.equal(g.hasDevice,false);});

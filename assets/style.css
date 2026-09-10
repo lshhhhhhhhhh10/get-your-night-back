@@ -62,3 +62,26 @@
 
 .door-active .noise-heading,.door-active .noise-track{display:none}.door-active .subtitle-wrap{bottom:315px}
 @media(max-width:700px){.door-active .subtitle-wrap{bottom:335px}.door-active #camera-toggle{display:none}}
+
+/* Brief directional captions describe audible events only. */
+#sound-direction{position:fixed;top:118px;left:50%;transform:translateX(-50%);z-index:12;max-width:90vw;border:1px solid #b9cbd33b;border-radius:24px;padding:8px 16px;background:#111e2cdd;color:#dae5df;font-size:13px;text-align:center;pointer-events:none}
+#reverse-door{padding:7px 12px;border:1px solid #ffffff30;border-radius:8px;background:#26394a;color:#d2dfdf;cursor:pointer}
+@media(max-width:600px){#sound-direction{top:134px;font-size:11px;padding:6px 10px}}
+
+.wardrobe-roles{display:flex;gap:8px;padding:0 28px 16px}.wardrobe-roles button{padding:9px 24px;border:1px solid #ffffff30;background:#233647;color:#e2e7e0;border-radius:24px;cursor:pointer}.wardrobe-roles button[aria-pressed=true]{color:#182637;background:#dfc397;border-color:#dfc397}
+
+.rescue-buttons{display:flex;flex-wrap:wrap;gap:8px}.rescue-buttons button{flex:1 1 25%;padding:10px 12px;border:1px solid #ffffff30;border-radius:9px;background:#273b49;color:#e3e6df;touch-action:none;cursor:pointer}.rescue-buttons button:active{background:#685b48}.using-gamepad .rescue-buttons{display:none}#rescue-help{line-height:1.7;color:#dedbc8;margin:10px 0 14px}.incident-active #interaction:has(#rescue-panel:not([hidden])){max-width:540px}
+
+/* Keep the hands, tabletop and bottom controls in separate visible areas. */
+.incident-active #interaction:has(#rescue-panel:not([hidden])){left:50%;right:auto;transform:translateX(-50%);width:min(540px,92vw);bottom:48px;padding:17px 22px}.incident-active:has(#rescue-panel:not([hidden])) .subtitle-wrap{bottom:340px}.tickle-active .interaction-panel{width:300px;right:24px;bottom:120px}.tickle-active .controls-legend,.tickle-active .touch-controls,.tickle-active .noise-row{visibility:hidden}
+@media(max-width:700px){.tickle-active .interaction-panel{width:92vw;left:4vw;right:auto;bottom:55px;padding:12px 16px}.tickle-active .subtitle-wrap{bottom:310px}.tickle-active .mission-panel,.tickle-active .minimap-button{visibility:hidden}.incident-active #interaction:has(#rescue-panel:not([hidden])){bottom:64px;padding:12px 15px}.rescue-buttons button{font-size:12px;padding:7px 9px}.incident-active:has(#rescue-panel:not([hidden])) .subtitle-wrap{bottom:345px}}
+
+.game-page.tickle-active .interaction-panel{left:auto;right:24px;transform:none}.incident-active:has(#rescue-panel:not([hidden])) .subtitle-wrap{visibility:hidden}
+@media(max-width:700px){.game-page.tickle-active .interaction-panel{left:4vw;right:auto;transform:none;bottom:55px}.tickle-active .listening-panel{display:none}}
+
+.incident-active .game-tools,.tickle-active .game-tools{top:14px;bottom:auto;right:20px}.incident-active #camera-toggle,.tickle-active #camera-toggle{display:none}
+@media(max-width:700px){.incident-active #incident-caption{top:105px;font-size:12px;letter-spacing:1px}.incident-active .game-tools,.tickle-active .game-tools{top:12px;right:12px}#sound-direction{top:121px}}
+.incident-active:not(.search-active) #notes-open{display:none}
+
+/* v0.13: controller feedback settings remain scrollable on short screens. */
+.feedback-settings{border:1px solid var(--line);border-radius:12px;padding:16px;margin:20px 0 16px;min-width:0;background:#101a2b66}.feedback-settings legend{padding:0 8px;color:var(--gold);font-size:14px}.feedback-settings .setting-row{grid-template-columns:minmax(85px,1fr) minmax(60px,1fr) 45px}.feedback-settings .setting-check{margin:12px 0}.feedback-settings .settings-note{margin:12px 0;font-size:12px}.feedback-status{font-size:12px;line-height:1.65;color:var(--teal);margin:10px 0;overflow-wrap:anywhere}.feedback-actions{display:flex;flex-wrap:wrap;gap:8px}.feedback-actions .secondary{flex:1 1 120px;width:auto;font-size:12px;padding:9px 10px;margin:0}.feedback-actions button:disabled{opacity:.4}.settings-dialog{max-height:calc(100% - 24px);overflow-y:auto;overscroll-behavior:contain}.settings-dialog>.dialog-header{position:sticky;top:-30px;background:var(--panel);z-index:1;padding-top:6px}.feedback-settings input{min-width:0;width:100%}.feedback-settings input[type=checkbox]{width:auto}

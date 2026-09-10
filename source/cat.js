@@ -27,7 +27,7 @@ export function tickCat(game,dt){
  if(c.state==='calm'||c.state==='play'){c.timer-=dt;if(c.timer<=0){c.state='idle';c.still=0;}return;}
  if(c.state==='jump'){
    if(game.mode)return;c.timer+=dt;if(c.timer>=.55){c.state='calm';c.timer=12;c.cooldown=24;c.route=[];
-    if(game.vase==='stable'){game.vase='wobbling';game.beginIncident('vase');game.mode.noiseSource={...CAT_VASE};game.say('猫扑上桌沿，尾巴扫到了花瓶！亮区内按空格接住。','warning');}}
+    if(game.vase==='stable'){game.vase='wobbling';game.beginIncident('vase');game.mode.catCause=true;game.mode.noiseSource={...CAT_VASE};game.say('猫扑上桌沿，尾巴扫到了花瓶！对准落点，双手托住。','warning');}}
    return;
  }
  if(['approach','prepare'].includes(c.state)){
