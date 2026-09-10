@@ -9,12 +9,12 @@
 每轮自动维护当前状态；已确认玩法同步简报，旧规则标明替代关系。长期规则不堆版本日志，AI 实施选择不冒充用户确认，学生反思由学生填写。[原始导出稿](development-log/brief-original.md) 原样存档，工作简报与历史记录继续保留。具体维护方式见 AGENTS。
 
 
-当前公开版本 **v0.14.4**：花瓶／铁盒归位时，摇杆上下左右与画面里的模型方向对应；向上抬过桌沿，左右对准原垫，再向下放稳。键盘与画面按钮同步，松杆停止。已上线并通过键鼠／模拟手柄、释放保护与窄屏公开验证。详情见 [项目状态](PROJECT_STATUS.md)。
+当前音频修订 **v0.14.5**：松动木板改用网上 CC0 录音包的真实吱响，父母脚步加强转头定位、近远和隔墙区别；真实鼾声与脱水声覆盖原掩护窗口，部分盖住自己的脚步。保留 v0.14.4 四方向归位操作。发布进度与验证范围见 [项目状态](PROJECT_STATUS.md)。
 
 ## 在线游玩
 
 - 项目首页：https://lshhhhhhhhhh10.github.io/get-your-night-back/
-- 直接游戏：https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.14.4
+- 直接游戏：https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.14.5
 - 公开仓库：https://github.com/lshhhhhhhhhh10/get-your-night-back
 
 ## 运行
@@ -100,7 +100,7 @@ HRTF 随转头改变方位，距离改变音量和高频细节，隔墙或关门
 | Three.js | 0.180.0 | MIT | 3D 场景、角色、相机与灯光 |
 | Vite | 6.3.6 | MIT | 开发时将源码及依赖构建为静态模块 |
 
-依赖版本保存在 `source/package.json`，完整依赖锁定在 `source/package-lock.json`。许可证副本位于 `assets/vendor/`。住宅和家具由项目几何代码生成；玩家与家长都使用学生提供的 PEAK 角色附件，经 Blender 修复贴图和添加骨骼后导出为本地 GLB，来源见 `assets/models/README.md`。脚步、门、抽屉与金属落地使用本地 CC0 真实录音，来源及处理记录见 `assets/audio/README.md`；其他声音和原创音乐在 `source/audio.js` 中生成，字体采用系统字体；无 CDN、外部字体、付费 API 或运行时远程服务。
+依赖版本保存在 `source/package.json`，完整依赖锁定在 `source/package-lock.json`。许可证副本位于 `assets/vendor/`。住宅和家具由项目几何代码生成；玩家与家长都使用学生提供的 PEAK 角色附件，经 Blender 修复贴图和添加骨骼后导出为本地 GLB，来源见 `assets/models/README.md`。脚步、松动木板、鼾声、脱水声、门、抽屉与金属落地使用本地 CC0 真实录音，来源及处理记录见 `assets/audio/README.md`；其他声音和原创音乐在 `source/audio.js` 中生成，字体采用系统字体；无 CDN、外部字体、付费 API 或运行时远程服务。
 
 修改代码后：
 

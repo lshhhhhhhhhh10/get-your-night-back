@@ -200,7 +200,7 @@ $('#phone-mute').onpointerdown=e=>{e.preventDefault();game.action();keys.add('e'
 function tossToy(){const yaw=view.mode!=='overview'?view.yaw:0;game.tossCatToy(Math.sin(yaw),-Math.cos(yaw));persist();}
 function updateCatUI(){const c=game.cat,near=game.catNear(5.5);$('#cat-panel').hidden=!game.active||!near||!!game.mode||phonePending(game);const names={idle:'猫在看着你',follow:'猫悄悄跟了过来',rub:'猫正贴着腿蹭蹭',calm:'呼噜噜……猫很满足',toy:'猫追着玩具球去了',play:'猫正和球较劲',approach:'猫盯上了花瓶',prepare:`猫准备起跳 · ${Math.max(0,c.timer).toFixed(1)} 秒`,jump:'猫扑向桌沿！'};$('#cat-state').textContent=names[c.state];$('#cat-pet').disabled=!game.catNear()||['calm','play','jump'].includes(c.state);$('#cat-pet').textContent=padText('E · 安抚');$('#cat-toy').disabled=c.toyCooldown>0||c.state==='jump';$('#cat-toy').textContent=c.toyCooldown>0?`玩具 · ${Math.ceil(c.toyCooldown)} 秒后可用`:inputDevice==='gamepad'?'R2 · 丢玩具球':'Q · 丢玩具球';}
 $('#cat-pet').onclick=()=>{game.petCat();persist();};$('#cat-toy').onclick=tossToy;
-function updateNightUI(){const mask=maskAt(game);$('#mask-cue').textContent=mask?`${mask.name}掩护中 · 可直接走过木板`:'留意长鼾声与洗衣机脱水声';$('#mask-cue').classList.toggle('active',!!mask);
+function updateNightUI(){const mask=maskAt(game);$('#mask-cue').textContent=mask?`${mask.name}掩护中 · 可直接走过木板`:'留意鼾声／脱水声盖过脚步时再走';$('#mask-cue').classList.toggle('active',!!mask);
  const phone=game.night.phone;$('#phone-panel').hidden=!phonePending(game)||!game.active||['catch','reaction'].includes(game.mode?.type);$('#phone-state').textContent=phone.state==='warning'?`来电预兆 · ${Math.max(0,phone.timer).toFixed(1)} 秒后响铃`:'手机正在响铃';$('#phone-hold').style.width=`${Math.min(100,phone.hold/1.2*100)}%`;$('#phone-mute').textContent=padText('停下，按住 E · 1.2 秒静音');$('#phone-help').textContent=game.mode?padText('先按 Esc 停下当前动作，再静音。'):'可蹲着静音；移动会打断进度。';}
 function updateUI(){updateHearing();updateNightUI();updateCatUI();document.body.classList.toggle('door-active',game.mode?.type==='door'&&game.active);document.body.classList.toggle('tickle-active',game.mode?.type==='tickle'&&game.active);
   const p=game.parent,m=game.mode;document.body.classList.toggle('lock-active',m?.type==='lockpick'&&game.active);const cinematic=['catch','reaction','search','lockpick'].includes(m?.type);document.body.classList.toggle('incident-active',cinematic&&game.active);document.body.classList.toggle('search-active',m?.type==='search'&&game.active);$('#incident-caption').hidden=!cinematic;$('#incident-caption').textContent=cinematic?(m.type==='lockpick'?'一点点，听见咔哒。':m.type==='search'?'轻轻翻，仔细找。':m.type==='reaction'?(m.resultText||(m.success?'接住了。':'糟了，落地了。')):'那一瞬间，时间慢了下来。'):'';$('#objective').textContent=game.hasDevice?'带设备回到卧室':'探索房间，找回设备';$('#device-icon').classList.toggle('found',game.hasDevice);$('#parent-cue').textContent=stateNames[p.state];$('#parent-cue').dataset.state=p.state;$('#context').textContent=context();$('#context').hidden=!context();$('#hide-badge').hidden=!game.hidden;
@@ -393,10 +393,7 @@ function animate(now){
   const focusRescue=!!game.mode?.rescue;if(focusRescue!==rescueFocused){rescueFocused=focusRescue;Object.assign(rescuePointers,{left:false,right:false,x:0,up:0,down:0});if(focusRescue)unlockMouse();else{keys.clear();padInput.inhibit();padFrame=emptyFrame();haptics.stop();}}
   animateTickleHands(tickleHands,game.mode,game.time);
   if(focusDoor!==doorFocused){doorFocused=focusDoor;doorPointer=false;transition={time:0,from:camera.position.clone(),rotation:camera.quaternion.clone()};if(focusDoor)unlockMouse();}
-  const audioForward=camera.getWorldDirection(new THREE.Vector3());listeningYaw=focusDoor||game.mode?.type==='tickle'?Math.atan2(audioForward.x,-audioForward.z):view.mode==='overview'?0:view.yaw;
-  soundscape?.listen(game.player,listeningYaw,v=>occluded(game.player,v,game.level,doorsForSound(v,game.doors),false));
-  soundscape?.doorMotion(game.mode,game.active&&game.status==='playing',game.player,focusDoor?(game.player.z>game.mode.door.z?0:Math.PI):view.yaw);
-  for(const e of game.events.splice(0)){if(e.type==='sound')sound(e.kind,e.strength,e.x,e.z,e.surface,e.impact);if(game.active&&inputDevice==='gamepad')haptics.handle(e,now);}
+  const frameEvents=game.events.splice(0);for(const e of frameEvents)if(game.active&&inputDevice==='gamepad')haptics.handle(e,now);
   haptics.tick(game,now,!!activePad&&game.active&&game.status==='playing'&&inputDevice==='gamepad');
   const traveled=distance(old,game.player),moving=traveled>.0001;walkPhase+=traveled*8;
   playerMesh.position.set(game.player.x,0,game.player.z);const angle=game.player.heading-playerMesh.rotation.y;playerMesh.rotation.y+=Math.atan2(Math.sin(angle),Math.cos(angle))*Math.min(1,dt*16);
@@ -446,6 +443,13 @@ function animate(now){
   else{const center=(mapWidth(game.level)-1)/2;targetPos.set(center+15,26,34);const m=new THREE.Matrix4().lookAt(targetPos,new THREE.Vector3(center,.3,9),new THREE.Vector3(0,1,0));targetRotation.setFromRotationMatrix(m);}
   transition.time=Math.min(1,transition.time+dt/.48);const blend=transition.time*transition.time*(3-2*transition.time);
   if(transition.time<1){camera.position.lerpVectors(transition.from,targetPos,blend);camera.quaternion.slerpQuaternions(transition.rotation,targetRotation,blend);}else{camera.position.copy(targetPos);camera.quaternion.copy(targetRotation);}
+  // 用本帧实际镜头朝向，切视角／转头插值时声道也跟着画面转；听者仍在玩家处。
+  const audioForward=camera.getWorldDirection(new THREE.Vector3());listeningYaw=Math.atan2(audioForward.x,-audioForward.z);
+  const soundBlocked=v=>occluded(game.player,v,game.level,doorsForSound(v,game.doors),false);
+  soundscape?.listen(game.player,listeningYaw,soundBlocked);
+  soundscape?.environment(game,listeningYaw,soundBlocked);
+  soundscape?.doorMotion(game.mode,game.active&&game.status==='playing',game.player,focusDoor?(game.player.z>game.mode.door.z?0:Math.PI):view.yaw);
+  for(const e of frameEvents)if(e.type==='sound')sound(e.kind,e.strength,e.x,e.z,e.surface,e.impact);
   const fade=close&&!fp&&camera.position.distanceTo(new THREE.Vector3(game.player.x,eyeHeight,game.player.z))<1.35?.35:1;playerMesh.traverse(o=>{if(o.isMesh)for(const m of(Array.isArray(o.material)?o.material:[o.material])){m.transparent=fade<1;m.opacity=fade;m.depthWrite=fade===1;}});
   const fov=focusTickle?(camera.aspect<.8?100:78):focusDoor?69:fp?78:close?72:43;if(camera.fov!==fov){camera.fov=THREE.MathUtils.damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();}
   if(game.mode?.type==='step'||game.mode?.type==='catch')$('#pointer').style.left=`${game.pointer*100}%`;

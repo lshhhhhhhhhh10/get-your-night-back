@@ -46,3 +46,22 @@
 处理脚本：`source/tools/prepare-footsteps.py`。木地板裁剪起点为 0.55 / 1.10 / 2.125 / 2.65 秒；地毯为 0.63 / 1.255 / 2.155 / 4.205 秒；瓷砖为 2.43 / 3.205 / 6.78 / 7.73 秒。每段 0.46 秒，65 Hz 高通、8500 Hz 低通、单声道 32 kHz / 16 bit，峰值最高 0.72，增益上限 14 倍，5 ms 淡入与 30 ms 淡出。四段交替并轻微变速，蹲行降低音量，家长脚步更沉。
 
 声音从仓库载入。空间位置用 HRTF、距离衰减与遮挡低通表现；它是游戏声学近似，没有模拟完整室内反射。其余未在来源表中注明的音效与音乐仍是程序合成。
+
+
+## v0.14.5 木板受力与环境掩护实录（2026-09-10 核对）
+
+| 本地文件 | 作者、原作品与页面 | 许可 |
+| --- | --- | --- |
+| `floor-creak-1.wav` | Rudmer_Rotteveel — [Wood Creak Single V7](https://freesound.org/people/Rudmer_Rotteveel/sounds/506662/) | CC0 |
+| `floor-creak-2.wav` | Rudmer_Rotteveel — [Wood Creak Single V9](https://freesound.org/people/Rudmer_Rotteveel/sounds/506664/) | CC0 |
+| `floor-creak-3.wav` | Rudmer_Rotteveel — [Wood Creak Single V6](https://freesound.org/people/Rudmer_Rotteveel/sounds/506661/) | CC0 |
+| `snore-real.wav` | Daxter31 — [snoring](https://freesound.org/people/Daxter31/sounds/114609/) | CC0 |
+| `washer-spin.wav` | Zabuhailo — [wringing in the centrifuge.wav](https://freesound.org/people/Zabuhailo/sounds/144811/) | CC0 |
+
+三条木板录音来自同一 [Wood Creaks and Squeeks 声音包](https://freesound.org/people/Rudmer_Rotteveel/packs/28378/)，作者说明为踩下木地板的吱响。逐页核对 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) 许可后，下载页面公开 HQ MP3 试听。未登录下载原始 WAV，不把有损试听转换声称为无损原录音。洗衣声源自作者录制的 Siberia-2 旧式洗衣机脱水，不声称对应场景模型的品牌或型号。
+
+处理脚本：[prepare-floor-environment.py](../../source/tools/prepare-floor-environment.py)。木板去掉前后静段，起点 0.01653／0.04584／0.02006 秒，长度 0.94941／0.78159／1.28425 秒；鼾声截取 6.1–7.8 秒，洗衣机截取稳定脱水段 16–22 秒。统一 65 Hz 高通、9000 Hz 低通、32 kHz 单声道 16 bit PCM、5 ms 淡入和 30 ms 淡出，峰值上限木板／洗衣机 0.72、鼾声 0.78。具体下载地址与输入／输出 SHA-256 见 [素材清单](recordings-v145.json)。
+
+木板轮换三条实录，受力、轻落脚和踩响用不同长度与增益；替代之前的电子滑音。已有鞋底接触录音保留。鼾声及脱水声按游戏时间连续播放，暂停、醒来、结束窗口时淡出；续玩从保存相位进入。自身脚步／木板声在鼾声掩护时降至 60%、洗衣机有效范围内降至 55%，结束恢复；这是混音增益，与父母听觉里的 28%／30% 原掩护系数不同。
+
+父母脚步独立于自身脚步音轨；HRTF 加适度左右电平差，隔墙保留部分高频，背后略闷，近远衰减继续。关键线索出现时降低背景音乐。环境声为便于读取原玩法而采用宽声场和温和距离衰减，是游戏声学近似，不是完整建筑声场模拟。全部 24 个录音从本仓库加载，未列出的音乐和其他音效仍为程序生成。
