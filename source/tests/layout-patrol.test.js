@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {LOCKS,puzzleFor} from '../puzzles.js';
+import {LOCKS} from '../lockpick.js';
+import {finishLock} from './lockpick-helper.js';
 import {Game,canStand,wall,distance} from '../engine.js';
 import {furnitureFor,doorShape,circleHits,PARENT_HOME} from '../layout.js';
 import {createFurniture} from '../furniture.js';
@@ -20,7 +21,7 @@ test('移除旧整格空气墙；家具边缘按真实宽度阻挡',()=>{
 });
 test('三关可沿半格路径抵达每个藏点并触发搜索',()=>{
  for(let level=0;level<3;level++){const g=new Game(level);g.start();g.doors.forEach(d=>{d.open=true;d.progress=1;});
-  for(const s of g.spots){g.parent={...g.parent,x:3,z:12};const path=g.pathTo(s);assert.ok(path.length);assert.ok(path.every(p=>g.canOccupy(p.x,p.z)));g.player={...path.at(-1)};g.action();if(g.mode?.type==='puzzle'){g.night.clues=['bed-note','living-note','shelf-note'];assert.equal(g.solvePuzzle(puzzleFor(g,g.mode.puzzleId).answer),true);}assert.equal(g.mode?.spot,s,`${level} ${s.name}`);g.cancel();}
+  for(const s of g.spots){g.parent={...g.parent,x:3,z:12};const path=g.pathTo(s);assert.ok(path.length);assert.ok(path.every(p=>g.canOccupy(p.x,p.z)));g.player={...path.at(-1)};g.action();if(g.mode?.type==='lockpick')finishLock(g);assert.equal(g.mode?.spot,s,`${level} ${s.name}`);g.cancel();}
  }
 });
 test('家长完成多个巡视地点、停看、推门和真实回程，无穿家具或瞬移',()=>{

@@ -8,12 +8,13 @@ export function eventFeedback(e){
     return null;
   }
   if(e.type!=='sound')return null;
+  if(e.kind==='doorBump'){const impact=clamp((e.strength-24)/38);return pulse(.14+impact*.28,.10+impact*.16,65+impact*45,4);}
   const softer=e.kind==='crouchStep'?.4:1;
   if(['step','crouchStep'].includes(e.kind)){
     const p=e.surface==='tile'?pulse(.04,.22,32):e.surface==='carpet'?pulse(.012,.025,28):pulse(.10,.09,65);
     return {...p,strong:p.strong*softer,weak:p.weak*softer};
   }
-  const sounds={floorPressure:pulse(.13,.09,90,2),floorSoft:pulse(.08,.055,65,2),floorCreak:pulse(.29,.27,140,3),creak:pulse(.27,.24,130,3),
+  const sounds={lockPin:pulse(.025,.14,32,3),lockScrape:pulse(.10,.19,70,2),floorPressure:pulse(.13,.09,90,2),floorSoft:pulse(.08,.055,65,2),floorCreak:pulse(.29,.27,140,3),creak:pulse(.27,.24,130,3),
     phoneBuzz:pulse(.13,.25,85,3),phoneMute:pulse(.035,.07,35,2),catPurr:pulse(.045,.025,180,1),catToy:pulse(.055,.11,45,1),
     doorHandle:pulse(.035,.11,35,2),search:pulse(.045,.035,65,1),switch:pulse(.02,.085,32,2)};
   return sounds[e.kind]||null;
@@ -25,6 +26,7 @@ export function continuousFeedback(game,now){
     result.right={start:2,strength:clamp(1+(d.resistance||0)*2.7+p*.7,0,5)*Math.min(1,p*4)};
     if(d.roughness>.06)result.pulse=pulse(d.roughness*p*.18*grain,d.roughness*p*.36*grain,25+grain*45,0);
   }
+  if(m?.type==='lockpick'&&m.mechanism.pressure>.06){const l=m.mechanism;result.right={start:2,strength:1.1+l.pressure*1.6+(l.feedback==='binding'?1.1:0)};if(l.stress>.02)result.pulse=pulse(.03,.14,30,0);}
   const r=m?.type==='catch'?m.rescue:null;
   if(r&&r.stage!=='reach'&&r.kind!=='pencils'){
     const weight=r.kind==='vase'?3.4:r.kind==='tin'?2.4:1.1,unload=r.stage==='lower'?clamp((r.height-.34)/.7,.15,1):1;

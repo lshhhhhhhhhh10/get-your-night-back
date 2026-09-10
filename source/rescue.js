@@ -22,15 +22,15 @@ export function advanceRescue(r,input,dt,elapsed){
   if(r.kind==='pencils'){
     let contacts=0;
     for(const pencil of r.pencils){if(pencil.state!=='rolling')continue;
-      if(elapsed>=pencil.at-.4&&elapsed<=pencil.at+.18&&r.right>.12&&Math.abs(r.handX-pencil.x)<.27){pencil.state='caught';contacts++;}
-      else if(elapsed>pencil.at+.18)pencil.state='fallen';}
+      if(elapsed>=pencil.at-.4&&elapsed<=pencil.at+.18&&r.right>.12&&Math.abs(r.handX-pencil.x)<.27){pencil.state='caught';pencil.resolvedAt=elapsed;pencil.caughtZ=-.74+Math.max(0,Math.min(1,(elapsed-(pencil.at-1.2))/1.2))*1.14;contacts++;}
+      else if(elapsed>pencil.at+.18){pencil.state='fallen';pencil.resolvedAt=elapsed;}}
     if(r.pencils.every(p=>p.state!=='rolling')){const caught=r.pencils.filter(p=>p.state==='caught').length;return {contacts,done:true,success:caught===3,noiseFactor:(3-caught)/3,text:caught===3?'三枝铅笔全拦住了，轻轻收回笔筒。':`拦住了 ${caught} / 3 枝铅笔，其余滚到了地上。`};}
     return {contacts,done:false};
   }
   const fork=r.kind==='fork',tin=r.kind==='tin',both=r.left>.12&&r.right>.12,supported=fork?r.right>.12:both;
   if(r.stage==='reach'){
     r.objectX=clamp(r.objectX+Math.sin(elapsed*2.2)*dt*.16,-.65,.65);r.height=1.3-Math.max(0,elapsed-.65)*.22;
-    if(elapsed>.65&&r.height>.32&&Math.abs(r.handX-r.objectX)<.25&&(fork?r.right>.12:tin?r.right>.12:both)){r.stage=fork?'damp':'steady';r.release=0;r.grace=.4;return {contact:true};}
+    if(elapsed>.65&&r.height>.32&&Math.abs(r.handX-r.objectX)<.25&&(fork?r.right>.12:tin?r.right>.12:both)){r.stage=fork?'damp':'steady';r.contactAt=elapsed;r.release=0;r.grace=.4;return {contact:true};}
     if(elapsed>4.9)return {done:true,success:false};
   }else{
     r.objectX=r.handX;r.release=supported?0:r.release+dt;

@@ -55,10 +55,10 @@ test('tile is short, wood rounded, carpet faint, crouching softer; remote parent
   assert.ok(eventFeedback({type:'sound',kind:'crouchStep',surface:'wood'}).strong<wood.strong);
   for(const kind of ['parentStep','snore','bed','latch','notice'])assert.equal(eventFeedback({type:'sound',kind}),null);
 });
-test('hinge resistance follows actual sticky zones; less pressure softens grain, release is neutral',()=>{
+test('hinge resistance retains sticky zones; medium-speed grain exceeds fast sliding, release is neutral',()=>{
   const at=(progress,pressure)=>{const door={x:3,progress},drive=restingDoor();advanceDoor(door,drive,{doorPush:pressure},.01);return {mode:{type:'door',drive}};};
   const sticky=continuousFeedback(at(.36,.85),1000),easy=continuousFeedback(at(.1,.85),1000),gentle=continuousFeedback(at(.36,.45),1000);
-  assert.ok(sticky.right.strength>easy.right.strength);assert.ok(sticky.pulse.weak>gentle.pulse.weak);
+  assert.ok(sticky.right.strength>easy.right.strength);assert.ok(sticky.right.strength>gentle.right.strength);assert.ok(gentle.pulse.weak>sticky.pulse.weak);
   assert.notDeepEqual(sticky.pulse,continuousFeedback(at(.36,.85),1060).pulse);assert.equal(continuousFeedback(at(.36,0),1000).right,null);
 });
 test('vase load transfers between hands and unloads; fork stops ringing under sleeve',()=>{

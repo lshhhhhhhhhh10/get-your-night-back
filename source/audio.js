@@ -43,7 +43,7 @@ export class Soundscape{
       this.stats.hingeMoving=false;return;
     }
     this.stats.hingeMoving=true;
-    const rough=drive.roughness,volume=.14+rough*.95,rate=.78+drive.pressure*.40;
+    const rough=drive.roughness,volume=.14+rough*.95,rate=.78+(drive.speed??drive.pressure)*.40;
     this.hingeGain.gain.setTargetAtTime(volume,t,.045);this.hingeFilter.frequency.setTargetAtTime(1100+rough*4500,t,.055);
     const d=mode.door;this.hingePan.pan.setTargetAtTime(Math.max(-.8,Math.min(.8,((d.x-.47-player.x)*Math.cos(yaw)+(d.z-player.z)*Math.sin(yaw))*.8)),t,.04);
     for(const v of this.hingeSources)v.source.playbackRate.setTargetAtTime(rate,t,.08);
@@ -84,6 +84,8 @@ export class Soundscape{
     this.stats.lastKind=kind;this.stats.effects[kind]=(this.stats.effects[kind]||0)+1;this.stats.lastSpatial={kind,...profile,x,z};
     const burst=(time,duration,volume,f,q,type)=>this.noiseBurst(g,time,duration,volume,f,q,type);
     const note=(time,f,duration,level,type='sine')=>tone(ctx,g,time,f,duration,level,type);
+    if(kind==='lockPin'){note(t,1550,.065,.035,'triangle');burst(t,.024,.065,2600,3);}
+    if(kind==='lockScrape'){burst(t,.15,.14,1850,2.5);note(t,380,.11,.024,'triangle');}
     const foot=['step','crouchStep','parentStep','tileStep'].includes(kind),seq=this.footSequence[surface]||0;
     let footSample=false;
     if(foot){this.footSequence[surface]=seq+1;const variant=[1,3,2,4][seq%4],soft=kind==='crouchStep',parent=kind==='parentStep';
