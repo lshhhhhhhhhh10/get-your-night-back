@@ -47,7 +47,7 @@ export class Soundscape{
     if(t>=this.hingeNext){
       // Long overlapping phrases retain the uneven texture of the real hinge.
       const source=ctx.createBufferSource(),envelope=ctx.createGain(),span=2.35,offset=(this.stats.hingeGrains*3.17) % Math.max(.01,buffer.duration-3.5);
-      source.buffer=buffer;source.playbackRate.value=rate;envelope.gain.setValueAtTime(0,t);envelope.gain.linearRampToValueAtTime(1,t+.11);envelope.gain.setValueAtTime(1,t+span-.32);envelope.gain.linearRampToValueAtTime(0,t+span);
+      source.buffer=buffer;source.playbackRate.value=rate;envelope.gain.setValueAtTime(0,t);envelope.gain.linearRampToValueAtTime(1,t+(this.hingeSources.size?.32:.04));envelope.gain.setValueAtTime(1,t+span-.32);envelope.gain.linearRampToValueAtTime(0,t+span);
       source.connect(envelope);envelope.connect(this.hingeFilter);source.start(t,offset);source.stop(t+span+.01);
       const voice={source,envelope};this.hingeSources.add(voice);source.onended=()=>{source.disconnect();envelope.disconnect();this.hingeSources.delete(voice);};this.hingeNext=t+span-.32;this.stats.hingeGrains++;
     }

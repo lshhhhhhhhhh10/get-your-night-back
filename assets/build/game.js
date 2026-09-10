@@ -27781,7 +27781,7 @@ class lM {
     for (const _ of this.hingeSources) _.source.playbackRate.setTargetAtTime(f, o, 0.08);
     if (o >= this.hingeNext) {
       const _ = r.createBufferSource(), m = r.createGain(), p = 2.35, M = this.stats.hingeGrains * 3.17 % Math.max(0.01, c.duration - 3.5);
-      _.buffer = c, _.playbackRate.value = f, m.gain.setValueAtTime(0, o), m.gain.linearRampToValueAtTime(1, o + 0.11), m.gain.setValueAtTime(1, o + p - 0.32), m.gain.linearRampToValueAtTime(0, o + p), _.connect(m), m.connect(this.hingeFilter), _.start(o, M), _.stop(o + p + 0.01);
+      _.buffer = c, _.playbackRate.value = f, m.gain.setValueAtTime(0, o), m.gain.linearRampToValueAtTime(1, o + (this.hingeSources.size ? 0.32 : 0.04)), m.gain.setValueAtTime(1, o + p - 0.32), m.gain.linearRampToValueAtTime(0, o + p), _.connect(m), m.connect(this.hingeFilter), _.start(o, M), _.stop(o + p + 0.01);
       const x = { source: _, envelope: m };
       this.hingeSources.add(x), _.onended = () => {
         _.disconnect(), m.disconnect(), this.hingeSources.delete(x);

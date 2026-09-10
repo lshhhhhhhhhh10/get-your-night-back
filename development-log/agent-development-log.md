@@ -1113,3 +1113,24 @@ source 门与音频模块、主循环和手柄输入，game.html / assets/style.
 93 项规则检查通过。浏览器键盘、鼠标、模拟 PS5 轻压与重压、门两侧、全景/近景返回、取消、半开保存、暂停和拔出手柄收声均通过。第一关真实键盘完整解谜、开门、翻找、静音、返程，100 分，无脚本错误。离线音频同源对照的重摩擦 RMS 约为轻推 8.6 倍，最大峰值 0.784、无削波，停止后输出归零；长声段交叠正常。没有更改父母巡查或视线识别来通过测试。
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 无待批准的实施步骤，按已有授权发布原 GitHub Pages 并复查。等待学生对听声收力、门缝特写和实体 R2 压感的试玩评价；不代写 Required Student Reflection。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 37 — Raw Interaction Log
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** 公开网址复查与声音接缝修整
+**Current Goal:** 完成上线，保存真实验证结果
+**Git Tag / Commit:** v0.11.0 / 3a21ffd；接缝与发布记录 v0.11.1
+### Student Prompt
+完成本轮依靠真实门轴声判断、无需速度条的开门优化。
+### Agent Response Summary
+原 GitHub Pages 已发布 v0.11.0 并通过线上操作复查。补丁 v0.11.1 把后续录音声段的淡入设为与前一段淡出一致的 0.32 秒，避免接缝出现不必要的增益叠加；首次推动仍快速入声。
+### AI Design Assumptions (REQUIRED — do not skip)
+None. 本条仅配平已有音频包络并记录发布结果，没有增添玩法或修改家长难度。
+### Development Action
+确认 Pages 构建 3a21ffd 成功；在正式域名测试键盘/鼠标推门、R2 连续压深、停止、取消、刷新半开门、暂停与手柄断线、两侧特写、窄屏以及全景返回。检查首页所有图片、过程页、游戏和相对路径；最后重新构建并检查音频补丁。
+### Files / Mechanics Changed
+source/audio.js、assets/build/game.js、game.html 的版本路径、process.html 和本日志。
+### Immediate Result
+线上上述操作无脚本或资源错误，七个录音全部正常加载。93 项规则检查通过，第一关实际键盘完整通关为 100 分。音频补丁复测重摩擦 RMS 0.0476、轻推 0.0055，峰值低于 0.784，停止后归零，交叠段持续有声。没有实体 DualSense 实测，也没有把客观音频检查等同于人类自然听懂反馈。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+无需再次批准发布。等待学生体验声音、松手收力与实体手柄压感，再根据真实反馈调整；学生反思留给学生本人。
