@@ -1,3 +1,4 @@
+import {objectPose} from './incident-motion.js';
 const clamp=(n,a=0,b=1)=>Math.max(a,Math.min(b,n));
 export const RESCUE_DURATION=10;
 export function newRescue(kind,seed=0){
@@ -12,7 +13,7 @@ export function rescueHelp(r,pad=false){
     r.kind==='tin'?`${steer} 对准铁盒，${right} 托底，${left} 压住盒盖。`:`${steer} 对准花瓶，${left} ＋ ${right} 双手托住。左右用力不均会歪。`;
   if(r.stage==='damp')return `保持 ${right} 托住，按住 ${left} 用袖口包住叉子，等它停止颤动。`;
   if(r.stage==='steady')return r.kind==='tin'?`保持 ${right} 托底，${left} 轻压盒盖，别让它叮当响。`:`保持 ${left} ＋ ${right} 托住，${pad?'轻压倾斜一侧的扳机':'两只手一起稳稳托住'}，把花瓶扶正。`;
-  return `双手保持托住，${down} 慢慢放回台面；放稳前别松手。`;
+  return `双手保持托住，${down} 将${r.kind==='tin'?'铁盒送回柜顶垫布':'花瓶送回原来的圆垫'}；放稳前别松手。`;
 }
 // No moving cursor: hand position, grip balance, rolling trajectories and support
 // are the controls. Durations are a game slow-motion model, not physical units.
@@ -38,8 +39,14 @@ export function advanceRescue(r,input,dt,elapsed){
     if(fork){r.steady=both?r.steady+dt:Math.max(0,r.steady-dt);r.tilt=Math.sin(elapsed*35)*.12*Math.max(0,1-r.steady/.6);if(r.steady>=.6)return {done:true,success:true,text:'袖口裹住叉子，金属的颤动停了。'};}
     else if(tin){r.tilt*=Math.exp(-dt*4);if(r.left<.12){r.lidNoise+=dt;if(r.lidNoise>.5&&!r.clink){r.clink=true;return {clink:true};}}r.steady=both?r.steady+dt:0;}
     else{r.tilt=clamp(r.tilt*Math.exp(-dt*1.7)+(r.right-r.left)*dt*2+(r.handX-oldX)*.22,-1.5,1.5);if(Math.abs(r.tilt)>.85)return {done:true,success:false,text:'两只手用力差太多，花瓶歪了出去。'};r.steady=both&&Math.abs(r.tilt)<.20?r.steady+dt:0;}
-    if(!fork&&r.steady>.5)r.stage='lower';
-    if(r.stage==='lower'&&both&&input.rescueDown>.08){r.height=Math.max(.34,r.height-input.rescueDown*dt*(.24+(1-(r.left+r.right)/2)*.46));if(r.height<=.34)return {done:true,success:true};}
+    if(!fork&&r.steady>.5&&r.stage!=='lower'){
+      r.returnFrom=objectPose({type:'catch',rescue:r,elapsed});r.returnHandX=r.handX;r.returnTilt=r.tilt;r.returnHeight=r.height;r.returnProgress=0;r.stage='lower';
+    }
+    if(r.stage==='lower'){
+      // Old mid-rescue saves obtain an origin once, without resetting progress.
+      if(!r.returnFrom){r.returnFrom=objectPose({type:'catch',rescue:{...r,stage:'steady'},elapsed});r.returnHandX=r.handX;r.returnTilt=r.tilt;r.returnHeight=r.height;r.returnProgress=0;}
+      if(both&&input.rescueDown>.08){r.height=Math.max(.34,r.height-input.rescueDown*dt*(.24+(1-(r.left+r.right)/2)*.46));r.returnProgress=clamp((r.returnHeight-r.height)/Math.max(.001,r.returnHeight-.34));if(r.height<=.34){r.returnProgress=1;return {done:true,success:true};}}
+    }
   }
   return {done:false};
 }

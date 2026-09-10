@@ -1,4 +1,5 @@
-import {createVase} from './incident-props.js';
+import {STATIONS} from './incident-setting.js';
+import {applyIncidentResult} from './incident-props.js';
 import {rescueHelp} from './rescue.js';
 import {Haptics} from './haptics.js';
 import {createTickleHands,animateTickleHands} from './tickle-detail.js';
@@ -101,8 +102,9 @@ function buildHouse(){
   nightProps=buildNightProps(house,game.level);toolLabels=[];
   for(const item of LURES.filter(l=>l.minLevel<=game.level)){const marker=label(item.name,item.x,item.y+.45,item.z,'#efd5a2',.40);marker.visible=false;toolLabels.push({item,marker});}
   const target=game.spots.find(s=>s.device),support=furnitureFor(game.level).find(f=>f.id===target.id);
-  box(.13,.04,.10,'#353c48',target.x,support.h+.025,target.z);box(.18,.009,.016,'#a9afac',target.x+.14,support.h+.010,target.z);
-  chargerLamp=ball(.022,'#9de4b8',target.x,support.h+.047,target.z+.052);chargerLamp.material=new THREE.MeshStandardMaterial({color:0x9de4b8,emissive:0x74c9a1,emissiveIntensity:.7});chargerLamp.material.userData.nightOwned=true;
+  const hint=Object.values(STATIONS).find(s=>s.id===target.id)?.charger||{x:0,z:0},hintYaw=support.yaw||0,hintX=target.x+hint.x*Math.cos(hintYaw)+hint.z*Math.sin(hintYaw),hintZ=target.z-hint.x*Math.sin(hintYaw)+hint.z*Math.cos(hintYaw);
+  box(.13,.04,.10,'#353c48',hintX,support.h+.025,hintZ);box(.18,.009,.016,'#a9afac',hintX+.14,support.h+.010,hintZ);
+  chargerLamp=ball(.022,'#9de4b8',hintX,support.h+.047,hintZ+.052);chargerLamp.material=new THREE.MeshStandardMaterial({color:0x9de4b8,emissive:0x74c9a1,emissiveIntensity:.7});chargerLamp.material.userData.nightOwned=true;
   // 薄地毯没有阻挡体积；居住用途通过成组家具、挂画和灯光表达。
   for(const r of RUGS)box(r.w,.018,r.d,r.color,r.x,.026,r.z);
   const bedsideGlow=new THREE.PointLight(0xffb95e,14,6,1.8);bedsideGlow.position.set(3.5,2,11.8);house.add(bedsideGlow);
@@ -118,7 +120,7 @@ function buildHouse(){
   // 踢脚线只附着在可见墙面上，不伸入门洞。
   for(let z=1;z<MAP_DEPTH-1;z++)for(let x=1;x<mapWidth(game.level)-1;x++)if(!wall(x,z,game.level))for(const[dx,dz]of[[1,0],[-1,0],[0,1],[0,-1]])if(wall(x+dx,z+dz,game.level))box(dx?.035:1,.11,dz?.035:1,'#88909b',x+dx*.49,.055,z+dz*.49);
   for(const[x,z,axis]of[[2,10.51,'x'],[14.51,4.8,'z']]){const g=new THREE.Group();g.position.set(x,1.6,z);g.rotation.y=axis==='z'?Math.PI/2:0;house.add(g);box(.63,.54,.035,'#b7a185',0,0,0,g);box(.53,.44,.008,'#5b8490',0,0,.022,g);box(.29,.15,.01,'#b6b4a5',0,-.08,.029,g);}
-  vaseMesh=new THREE.Group();vaseMesh.position.set(9.7,.88,2.8);house.add(vaseMesh);const vaseProp=createVase();vaseProp.position.y=.22;vaseMesh.add(vaseProp);vaseMesh.visible=true;
+  vaseMesh=furniture.get('vase-stand').userData.incident.object;
   for(const[text,x,z]of[['你的卧室',4,12],['父母房间',7,6],['客厅',3,4.1],['书房',16,3],['储物间',16,11.8],['洗衣间',12,16.2],...(game.level>0?[['餐厅',21,3],['后走廊',21,16]]:[])])label(text,x,2.72,z,'#c5d5e5',.58);
   playerMesh=createPlayer();playerMesh.position.set(game.player.x,0,game.player.z);phoneMesh=box(.15,.26,.035,'#293349',.30,.45,.20,playerMesh.userData.body);box(.11,.19,.015,'#9bcbc6',0,0,.026,phoneMesh);phoneMesh.visible=false;parentMesh=createPlayer(true);parentMesh.position.set(7,0,6);parentMesh.visible=false;tickleHands=createTickleHands();house.add(tickleHands);tickleHands.visible=false;
   parentLight=new THREE.SpotLight(0xffd496,16,7,Math.PI/6,.6,1.4);parentLight.castShadow=true;parentLight.shadow.mapSize.set(512,512);parentLight.shadow.normalBias=.03;parentLight.position.set(7,1.1,6);parentTarget=new THREE.Object3D();house.add(parentTarget);parentLight.target=parentTarget;house.add(parentLight);
@@ -418,11 +420,11 @@ function animate(now){
   }
   parentLight.visible=['checking','returning'].includes(p.state);parentLight.position.set(p.x,1.25,p.z);parentTarget.position.set(p.x+Math.sin(p.heading)*4,.05,p.z+Math.cos(p.heading)*4);
   for(const{d,pivot,detail}of doorMeshes){pivot.rotation.y=d.progress*Math.PI*.49;animateDoorDetail(detail,focusDoor&&game.mode.door===d?game.mode.drive||{}:null,game.player.z>=d.z?1:-1,game.time,distance(game.player,d)<1.7?d.contact:null);}
-  for(const{s,mesh,marker}of spotMeshes){animateFurniture(mesh,game.mode?.elapsed||0,game.mode?.type==='search'&&game.mode.spot.id===s.id);if(mesh.userData.padlock)mesh.userData.padlock.visible=locked(game,s.id);marker.visible=!s.searched&&distance(s,game.player)<2&&!occluded(game.player,s,game.level,game.doors,true,s.id);}
+  for(const{s,mesh,marker}of spotMeshes){applyIncidentResult(mesh,game.incidentResults[s.id]);animateFurniture(mesh,game.mode?.elapsed||0,game.mode?.type==='search'&&game.mode.spot.id===s.id);if(mesh.userData.padlock)mesh.userData.padlock.visible=locked(game,s.id);marker.visible=!s.searched&&distance(s,game.player)<2&&!occluded(game.player,s,game.level,game.doors,true,s.id);}
   updateCatModel(catMesh,game.cat,game.time);catToyMesh.visible=!!game.cat.toy;if(game.cat.toy){const t=game.cat.toy,u=Math.min(1,t.age/.5);catToyMesh.position.set(t.from.x+(t.x-t.from.x)*u,.07+Math.sin(u*Math.PI)*.35,t.from.z+(t.z-t.from.z)*u);catToyMesh.rotation.x=game.time*3;}
   updateNightProps(nightProps,game);const nearest=game.toolNear();for(const {item,marker}of toolLabels)marker.visible=game.active&&nearest?.id===item.id;chargerLamp.visible=!game.hasDevice&&!locked(game,game.spots.find(s=>s.device).id);
   stepTarget.visible=game.mode?.type==='step';if(stepTarget.visible)stepTarget.position.set(game.mode.target.x,.045,game.mode.target.z);
-  vaseMesh.rotation.z=game.vase==='wobbling'?Math.sin(now*.023)*.32:game.vase==='fallen'?Math.PI/2:0;vaseMesh.position.set(game.vase==='fallen'?10.25:9.7,.88,game.vase==='fallen'?3.14:2.8);if(game.vase==='fallen'){vaseMesh.updateMatrixWorld(true);vaseMesh.position.y+=.04-new THREE.Box3().setFromObject(vaseMesh).min.y;}
+  if(game.incidentResults.vase)applyIncidentResult(vaseMesh.parent.parent,game.incidentResults.vase);else {vaseMesh.rotation.z=game.vase==='wobbling'?Math.sin(now*.023)*.32:game.vase==='fallen'?Math.PI/2:0;vaseMesh.position.set(game.vase==='fallen'?.34:0,STATIONS.vase.rest.y,game.vase==='fallen'?.58:0);if(game.vase==='fallen'){vaseMesh.updateWorldMatrix(true,true);vaseMesh.position.y+=.04-new THREE.Box3().setFromObject(vaseMesh).min.y;}}
   wallBlend=THREE.MathUtils.damp(wallBlend,close?1:0,9,dt);for(const{mesh,cap,height}of wallMeshes){const h=THREE.MathUtils.lerp(height,2.6,wallBlend);mesh.scale.y=h/2.6;mesh.position.y=h/2;cap.position.y=h-.015;}ceiling.visible=close&&wallBlend>.99;for(const m of openingMeshes)m.visible=close;for(const l of worldLabels)if(!spotMeshes.some(s=>s.marker===l)&&!toolLabels.some(s=>s.marker===l))l.visible=!close;
   const targetPos=new THREE.Vector3(),targetRotation=new THREE.Quaternion();
   eyeHeight=THREE.MathUtils.damp(eyeHeight,game.hidden?.85:1.37,16,dt);
@@ -446,7 +448,7 @@ function animate(now){
   const fov=focusTickle?(camera.aspect<.8?100:78):focusDoor?69:fp?78:close?72:43;if(camera.fov!==fov){camera.fov=THREE.MathUtils.damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();}
   if(game.mode?.type==='step'||game.mode?.type==='catch')$('#pointer').style.left=`${game.pointer*100}%`;
   if(['catch','reaction'].includes(game.mode?.type)){$('#incident-caption').textContent=game.mode.type==='reaction'?(game.mode.resultText||(game.mode.success?'接住了。':'糟了，落地了。')):'那一瞬间，时间慢了下来。';$('#interaction').hidden=game.mode.type==='reaction'||!game.active;}
-  if(['catch','reaction'].includes(game.mode?.type))incidentCamera.render(renderer,game.mode,camera.aspect);else if(game.mode?.type==='lockpick')lockCamera.render(renderer,game.mode,camera.aspect);else if(game.mode?.type==='search')searchCamera.render(renderer,game.mode,game.level,camera.aspect);else renderer.render(scene,camera);wardrobe?.render(now);if(now-lastUi>80){updateUI();lastUi=now;}
+  if(['catch','reaction'].includes(game.mode?.type))incidentCamera.render(renderer,game.mode,camera.aspect);else if(game.mode?.type==='lockpick')lockCamera.render(renderer,game.mode,camera.aspect);else if(game.mode?.type==='search')searchCamera.render(renderer,game.mode,game.level,camera.aspect,game.incidentResults[game.mode.spot.id]);else renderer.render(scene,camera);wardrobe?.render(now);if(now-lastUi>80){updateUI();lastUi=now;}
 }
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}window.addEventListener('resize',resize);
 async function boot(){

@@ -65,7 +65,7 @@ export class Game{
     this.doors=[{x:3,z:10,name:'卧室门',open:false,progress:0},{x:11,z:6,name:'旧木门',open:false,progress:0}];
     this.spots=this.preset.spots.map(([x,z,name,id],i)=>({x,z,name,id,searched:false,device:i===this.preset.device}));
     this.active=false;this.status='ready';this.mode=null;this.hidden=false;this.hasDevice=false;this.time=0;this.moveCooldown=0;this.noise=0;this.noiseAt={...HOME};this.noiseAge=100;this.quiet=0;this.events=[];this.toast='';this.toastLeft=0;this.history=[];this.vase='stable';this.nextVisit=level===2?32:Infinity;this.visits=0;this.pointer=.5;this.lastSnore=-9;this.lastFoot=0;this.lastSeen=0;this.aim=null;this.inspectionTarget={x:3,z:9};this.safeSteps=0;
-    this.cat=newCat();this.night=newNightTools();this.metrics=newMetrics();this.seed=Math.floor(Math.random()*4294967296)>>>0;this.incidentUsed={};this.incidentOutcomes={};this.realTime=0;
+    this.cat=newCat();this.night=newNightTools();this.metrics=newMetrics();this.seed=Math.floor(Math.random()*4294967296)>>>0;this.incidentUsed={};this.incidentOutcomes={};this.incidentResults={};this.realTime=0;
     this.velocity={x:0,z:0};this.walked=0;this.footTile=`${HOME.x},${HOME.z}`;this.stepTransit=null;
   }
   start(){this.status='playing';this.active=true;this.say('先听屋里的动静，再去房间找设备。遇到柜锁，靠近按 E 观察里面的机械结构。','hint');}
@@ -186,7 +186,7 @@ export class Game{
   }
   resolveIncident(success,result={}){
     const m=this.mode;if(m?.type!=='catch')return;const id=m.incidentId||'vase',event=INCIDENTS[id];
-    this.incidentOutcomes[id]=success?'caught':'fallen';if(success)this.metrics.catches++;
+    this.incidentOutcomes[id]=success?'caught':'fallen';if(m.rescue)this.incidentResults[id]={rescue:structuredClone(m.rescue),sourceElapsed:m.elapsed,success};if(success)this.metrics.catches++;
     if(id==='vase')this.vase=success?'caught':'fallen';
     const message=result.text||(success?event.success:event.failure);
     if(success){this.say(message,'good');this.emit('cloth',8);this.events.push({type:'haptic',kind:'settled',material:event.kind});}else if(!m.rescue)this.makeNoise(event.noise*(result.noiseFactor??1),`${message} 先听听父母的动静。`,event.sound,m.noiseSource||this.player);
@@ -303,7 +303,7 @@ export class Game{
     }
   }
   serialize(){
-    const fields=['cat','night','metrics','seed','incidentUsed','incidentOutcomes','realTime','level','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','pointer','lastSnore','lastFoot','inspectionTarget','safeSteps','walked','footTile','stepTransit','status'];
+    const fields=['cat','night','metrics','seed','incidentUsed','incidentOutcomes','incidentResults','realTime','level','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','pointer','lastSnore','lastFoot','inspectionTarget','safeSteps','walked','footTile','stepTransit','status'];
     const data=Object.fromEntries(fields.map(k=>[k,structuredClone(this[k])]));
     data.nextVisit=Number.isFinite(this.nextVisit)?this.nextVisit:null;
     data.doors=this.doors.map(d=>({open:d.open,progress:d.progress,direction:d.direction||1}));data.searched=this.spots.map(s=>s.searched);
@@ -313,7 +313,7 @@ export class Game{
   restore(data){
     if(!data||!Number.isInteger(data.level)||!PRESETS[data.level]||!Number.isFinite(data.player?.x)||!Number.isFinite(data.player?.z)||!Number.isFinite(data.time)||data.time<0||!Array.isArray(data.doors)||!data.parent||!Array.isArray(data.parent.route)||!Number.isFinite(data.parent.x)||!Number.isFinite(data.parent.z)||!Number.isFinite(data.parent.a))return false;
     this.reset(data.level);
-    const allowed=['metrics','seed','incidentUsed','incidentOutcomes','realTime','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','pointer','lastSnore','lastFoot','inspectionTarget','safeSteps','walked','footTile','stepTransit'];
+    const allowed=['metrics','seed','incidentUsed','incidentOutcomes','incidentResults','realTime','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','pointer','lastSnore','lastFoot','inspectionTarget','safeSteps','walked','footTile','stepTransit'];
     for(const k of allowed)if(data[k]!==undefined)this[k]=structuredClone(data[k]);
     if(data.night){
       const n=data.night;

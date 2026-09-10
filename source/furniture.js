@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {addIncidentDressing} from './incident-props.js';
 const materials=new Map();
 function material(c){if(!materials.has(c))materials.set(c,new THREE.MeshStandardMaterial({color:c,roughness:.88}));return materials.get(c);}
 // 所有实心体积限定在 layout 的占地内；抽屉、靠背和灯罩都随家具整体转向。
@@ -22,7 +23,7 @@ export function createFurniture(f){
     if(f.search){const lock=new THREE.Group();lock.position.set(0,bh*.64,d/2+.045);g.add(lock);const metal=new THREE.MeshStandardMaterial({color:'#bba576',metalness:.5,roughness:.4});const body=new THREE.Mesh(new THREE.BoxGeometry(.12,.13,.055),metal);lock.add(body);const loop=new THREE.Mesh(new THREE.TorusGeometry(.05,.012,5,12,Math.PI),metal);loop.position.y=.07;lock.add(loop);g.userData.padlock=lock;}
 
     if(f.type==='tv'){box(w*.83,.71,.075,'#30394c',0,1.22,0);box(w*.75,.60,.009,'#455c70',0,1.22,.043);box(.07,.28,.07,'#343846',0,.77,0);box(.48,.045,.26,'#343846',0,.62,0);}
-    if(f.type==='kitchen'){box(.68,.035,.49,'#526b77',w*.25,h+.015,-.06);box(.57,.012,.38,'#8eacb1',w*.25,h+.035,-.06);cyl(.026,.026,.25,'#c4d0cb',w*.25,h+.14,-d*.32);box(.026,.028,.2,'#c4d0cb',w*.25,h+.25,-d*.22);box(.36,.026,.27,'#c9a876',-w*.28,h+.013,.02);}
+    if(f.type==='kitchen'){box(.68,.035,.49,'#526b77',w*.25,h+.015,-.06);box(.57,.012,.38,'#8eacb1',w*.25,h+.035,-.06);cyl(.026,.026,.25,'#c4d0cb',w*.25,h+.14,-d*.32);box(.026,.028,.2,'#c4d0cb',w*.25,h+.25,-d*.22);if(f.id!=='kitchen-search')box(.36,.026,.27,'#c9a876',-w*.28,h+.013,.02);}
   }else if(f.type==='bed'){
     box(w,.29,d,'#756672',0,.255);box(w*.96,.23,d*.94,'#c9c8ca',0,.51);box(w*.96,.14,d*.58,c,0,.695,d*.17);box(w,.99,.08,c,0,.545,-d/2+.04);box(w*.76,.16,d*.21,'#e5ddd1',0,.705,-d*.32);for(const x of[-w*.40,w*.4])box(.06,.2,d*.54,'#bdcbd0',x,.68,d*.18);
   }else if(f.type==='sofa'||f.type==='chair'){
@@ -42,7 +43,7 @@ export function createFurniture(f){
   }else if(f.type==='plant'){
     cyl(w*.48,w*.33,.34,'#b18c78',0,.17,0);for(let i=0;i<4;i++){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.16,8,6),material(i%2?'#648e83':'#507c7c'));leaf.scale.set(.47,2.4,.60);leaf.position.set(Math.sin(i*1.57)*.09,.70,Math.cos(i*1.57)*.09);leaf.castShadow=true;g.add(leaf);}
   }
-  return g;
+  addIncidentDressing(f,g);return g;
 }
 
 export function animateFurniture(g,time,active){
