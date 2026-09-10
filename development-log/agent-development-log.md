@@ -1526,3 +1526,7 @@ source/engine.js 的声音事件与终点分支、source/audio.js、source/feedb
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 用户已明确授权，无待批准的发布步骤。继续完成上线、公开操作核验与结果记录；不把上传当作门参数、人类听感或实体手柄体验的逐项确认，不自动生成或代写反思。
+
+
+### 同轮发布完成补记
+游戏提交 `b283943af1efa10a7de10ee994dbf148a3d62127` 已推送原 main，GitHub Pages 工作流 `34482547189` 成功。公开 Chrome：三段门声、键鼠／模拟 R2／USB、双向终点单次撞击和提前收力、暂停／失焦／断线释放、两侧及 390 宽通过；完整最大 R2 开门撞击一次，最后 5% 轻推及键鼠松手短推不撞。19 个录音加载，无脚本／资源错误，脉冲结束 USB 归零。首次线上脚本在第 19 个录音加载完成前检查而失败，改为等待预加载后通过，未修改游戏实现。三页与 25 个去重同站资源均为 200；游戏构建和 6 个门相关源码逐一与独立发布文件哈希一致，游戏 SHA-256 为 `286ba13067dc29f2c4e7b63e76491bca7c02c12ccc39547d6e726584d4ddc211`。脚本为 /private/tmp/night-back-qa/door-impact-online.cjs、door-impact-release.cjs、door-online-pages.py。公开验证是定点交互与模拟设备，不是三夜整局或实体手柄手感。本次门修订已上线，无待批准步骤；随后只提交文档记录，不重建或改变已验证游戏。同期模型改动仍保留本地。
