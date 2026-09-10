@@ -1071,3 +1071,45 @@ index.html、process.html、development-log/agent-development-log.md；本条仅
 86 项规则检查通过，正式构建完成。前两关真实键盘完整通关。第三关实际按顺序解出三处线索、完成柜锁、找到设备并静音；多次自动路线在巡查期间直行或返程被发现，因此未宣称第三关整局自动通关。该结果说明等待和绕行仍需判断，不是用修改警觉参数使测试通过。三关各新增交互链已经在公开版本逐项验证；实体 PS5 与人类游玩节奏未验证。
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 无待批准的实施步骤。等待学生试玩新版，评价近景距离、奶白色改编角色、解谜难度和第三关巡查节奏；未代写 Required Student Reflection。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 35 — Raw Interaction Log
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** 开门动作重设计
+**Current Goal:** 让真实门轴声音和动作自然引导施力，移除速度条
+**Git Tag / Commit:** 基于 0d7f377；目标 v0.11.0
+### Student Prompt
+优化开门玩法，通过门轴转动的咯吱声引导调整开门速度；尽量根据网上真实素材，不用速度条，改为更直观的表现。
+### Agent Response Summary
+移除滑块、速度百分比和开门进度条。按住 E / 鼠标逐渐施力，松手立即停止；PS5 R2 的实际压深直接控制施力。真实门扇、门缝、扶门双手和门轴轻颤作为反馈，保留描述声音的字幕。
+### AI Design Assumptions (REQUIRED — do not skip)
+采用按住渐进施力与松手收力，避免新增多个调速键。门轴阻力随开启角度变化，后两关和旧木门稍涩；取消“低于最低速度也罚噪声”，轻推总能减轻声响。声音强弱与动作评分连续变化，不提供正确区间或对错颜色。特写使用原场景，父母与世界照常推进，随时可取消。开门时降低背景音乐以突出门轴和脚步；不支持专有自适应扳机。
+### Development Action
+检查旧逻辑后确认重复门撞声与门尚未打开的状态不符。检索并下载 chonkdonk 的 CC0 真实门轴录音公开 HQ 试听；剪去空白、调节电平，接入交叠声段、连续滤波和松手收声。建立新的施力模型与实际门上双手、合页细节，并同步模拟扳机输入。
+### Files / Mechanics Changed
+source/door.js、door-detail.js、engine.js、audio.js、main.js、gamepad.js、测试；game.html、assets/style.css、assets/audio/hinge-real.wav。后续同步网站和素材记录。
+### Immediate Result
+93 项规则检查通过，静态构建完成。正在浏览器检查两侧开门、键鼠与模拟 PS5、声音停止、暂停恢复与窄屏特写；尚未声称已上线或完成实体手柄检查。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+无待批准的实施步骤。完成后等待学生试玩并评价门轴声音能否自然引导收力、特写是否直观；不代写学生反思。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 36 — Raw Interaction Log
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** 开门完成、整局回归与发布
+**Current Goal:** 验证施力、声音、画面与原探索玩法相容
+**Git Tag / Commit:** v0.11.0
+### Student Prompt
+继续完成无需速度条、依靠真实门轴声音与直观表现的开门优化。
+### Agent Response Summary
+完成真实门上的双手与合页、镜头拉近和恢复、连续施力与涩点、录音交叠、停手收声与 PS5 R2。删除原正确区间和速度条，开门时也隐藏通用噪声条，保留父母状态与声音字幕。
+### AI Design Assumptions (REQUIRED — do not skip)
+声源约 2.35 秒交叠，收手后约 65 ms 停止；施力和摩擦的连续值共同决定音色和表现。音频数值测试只证明输出强弱与停止正常，不证明人类已觉得“真实”或“直观”。
+### Development Action
+修复字幕与动作面板重叠、窄屏排列、手臂末端露出和半开门恢复的临时状态；移除残留的旧控制提示。增加施力、涩点、三关可开门、评分、旧存档、模拟扳机和暂停规则检查，更新首页实景、过程页、README、简报和音频来源。
+### Files / Mechanics Changed
+source 门与音频模块、主循环和手柄输入，game.html / assets/style.css，新增 CC0 WAV 与门特写实景，项目四份文档和开发日志。
+### Immediate Result
+93 项规则检查通过。浏览器键盘、鼠标、模拟 PS5 轻压与重压、门两侧、全景/近景返回、取消、半开保存、暂停和拔出手柄收声均通过。第一关真实键盘完整解谜、开门、翻找、静音、返程，100 分，无脚本错误。离线音频同源对照的重摩擦 RMS 约为轻推 8.6 倍，最大峰值 0.784、无削波，停止后输出归零；长声段交叠正常。没有更改父母巡查或视线识别来通过测试。
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+无待批准的实施步骤，按已有授权发布原 GitHub Pages 并复查。等待学生对听声收力、门缝特写和实体 R2 压感的试玩评价；不代写 Required Student Reflection。

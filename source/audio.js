@@ -17,13 +17,14 @@ export class Soundscape{
     this.ctx=ctx;this.settings=settings;this.master=ctx.createGain();this.effects=ctx.createGain();this.music=ctx.createGain();this.ambience=ctx.createGain();
     this.master.gain.value=settings.master;this.effects.gain.value=settings.effects;this.music.gain.value=0;this.ambience.gain.value=0;
     this.effects.connect(this.master);this.music.connect(this.master);this.ambience.connect(this.master);this.master.connect(ctx.destination);
-    this.stats={musicNotes:0,effects:{},lastKind:'',samplesReady:0,sampleErrors:[]};this.samples={};this.ready=this.loadSamples();this.active=false;this.tension=false;this.step=0;this.next=ctx.currentTime+.05;
+    this.stats={musicNotes:0,effects:{},lastKind:'',samplesReady:0,sampleErrors:[],hingeGrains:0,hingeMoving:false};this.samples={};this.ready=this.loadSamples();this.active=false;this.tension=false;this.step=0;this.next=ctx.currentTime+.05;
+    this.hingeSources=new Set();this.hingeNext=0;this.hingeGain=ctx.createGain();this.hingeGain.gain.value=0;this.hingeFilter=ctx.createBiquadFilter();this.hingeFilter.type='lowpass';this.hingePan=ctx.createStereoPanner();this.hingeFilter.connect(this.hingeGain);this.hingeGain.connect(this.hingePan);this.hingePan.connect(this.effects);
     this.noise=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);const data=this.noise.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
     const wind=ctx.createBufferSource(),filter=ctx.createBiquadFilter();wind.buffer=this.noise;wind.loop=true;filter.type='lowpass';filter.frequency.value=170;wind.connect(filter);filter.connect(this.ambience);wind.start();
     this.apply();this.timer=setInterval(()=>this.schedule(),100);this.schedule();
   }
   async loadSamples(){
-    const files={handle:'door-handle.wav',hinge:'door-hinge.wav',bump:'door-bump.wav',latch:'door-latch.wav',drawer:'drawer.wav',metal:'metal-drop.wav'};
+    const files={handle:'door-handle.wav',hinge:'door-hinge.wav',hingeReal:'hinge-real.wav',bump:'door-bump.wav',latch:'door-latch.wav',drawer:'drawer.wav',metal:'metal-drop.wav'};
     await Promise.all(Object.entries(files).map(async([id,file])=>{try{const response=await fetch(new URL(`assets/audio/${file}`,document.baseURI));if(!response.ok)throw Error(response.status);this.samples[id]=await this.ctx.decodeAudioData(await response.arrayBuffer());this.stats.samplesReady++;}catch{this.stats.sampleErrors.push(file);}}));
   }
   sample(id,bus,time,volume,rate=1,offset=0,maxDuration=2){
@@ -31,7 +32,27 @@ export class Soundscape{
     const duration=Math.min(maxDuration,buffer.duration-offset),real=duration/rate;gain.gain.setValueAtTime(.0001,time);gain.gain.exponentialRampToValueAtTime(volume,time+.012);gain.gain.setValueAtTime(volume,time+Math.max(.015,real-.05));gain.gain.linearRampToValueAtTime(.0001,time+real);
     source.connect(gain);gain.connect(bus);source.start(time,offset,duration);source.onended=()=>{source.disconnect();gain.disconnect();};return true;
   }
-  apply(){const t=this.ctx.currentTime;this.master.gain.setTargetAtTime(this.settings.master,t,.04);this.effects.gain.setTargetAtTime(this.settings.effects,t,.04);this.music.gain.setTargetAtTime(this.settings.music*(this.tension?.40:.72)*(this.active?1:.5),t,.3);this.ambience.gain.setTargetAtTime(this.settings.ambience*.06,t,.1);}
+  doorMotion(mode,active,player,yaw){
+    const ctx=this.ctx,t=ctx.currentTime,drive=mode?.type==='door'?mode.drive:null,moving=!!(active&&drive?.moving),buffer=this.samples.hingeReal||this.samples.hinge;
+    const listening=!!(active&&mode?.type==='door');if(this.doorListening!==listening){this.doorListening=listening;this.apply();}
+    if(!moving||!buffer){
+      if(this.stats.hingeMoving){this.hingeGain.gain.setTargetAtTime(0,t,.018);for(const v of this.hingeSources){v.envelope.gain.cancelScheduledValues(t);v.envelope.gain.setTargetAtTime(0,t,.012);v.source.stop(t+.065);}this.hingeSources.clear();this.hingeNext=0;}
+      this.stats.hingeMoving=false;return;
+    }
+    this.stats.hingeMoving=true;
+    const rough=drive.roughness,volume=.14+rough*.95,rate=.78+drive.pressure*.40;
+    this.hingeGain.gain.setTargetAtTime(volume,t,.045);this.hingeFilter.frequency.setTargetAtTime(1100+rough*4500,t,.055);
+    const d=mode.door;this.hingePan.pan.setTargetAtTime(Math.max(-.8,Math.min(.8,((d.x-.47-player.x)*Math.cos(yaw)+(d.z-player.z)*Math.sin(yaw))*.8)),t,.04);
+    for(const v of this.hingeSources)v.source.playbackRate.setTargetAtTime(rate,t,.08);
+    if(t>=this.hingeNext){
+      // Long overlapping phrases retain the uneven texture of the real hinge.
+      const source=ctx.createBufferSource(),envelope=ctx.createGain(),span=2.35,offset=(this.stats.hingeGrains*3.17) % Math.max(.01,buffer.duration-3.5);
+      source.buffer=buffer;source.playbackRate.value=rate;envelope.gain.setValueAtTime(0,t);envelope.gain.linearRampToValueAtTime(1,t+.11);envelope.gain.setValueAtTime(1,t+span-.32);envelope.gain.linearRampToValueAtTime(0,t+span);
+      source.connect(envelope);envelope.connect(this.hingeFilter);source.start(t,offset);source.stop(t+span+.01);
+      const voice={source,envelope};this.hingeSources.add(voice);source.onended=()=>{source.disconnect();envelope.disconnect();this.hingeSources.delete(voice);};this.hingeNext=t+span-.32;this.stats.hingeGrains++;
+    }
+  }
+  apply(){const t=this.ctx.currentTime;this.master.gain.setTargetAtTime(this.settings.master,t,.04);this.effects.gain.setTargetAtTime(this.settings.effects,t,.04);this.music.gain.setTargetAtTime(this.settings.music*(this.doorListening?.25:1)*(this.tension?.40:.72)*(this.active?1:.5),t,.3);this.ambience.gain.setTargetAtTime(this.settings.ambience*.06,t,.1);}
   state(active,parent){const tension=['warning','checking','returning'].includes(parent);if(active!==this.active||tension!==this.tension){this.active=active;this.tension=tension;this.apply();}}
   schedule(){const now=this.ctx.currentTime;if(this.next<now-.3)this.next=now+.02;while(this.next<now+.22){musicBeat(this.ctx,this.music,this.next,this.step++,this.active&&this.tension);this.next+=MUSIC_BEAT;this.stats.musicNotes++;}}
   noiseBurst(bus,time,duration,level,freq,q=1,type='bandpass'){
@@ -40,6 +61,7 @@ export class Soundscape{
     s.connect(f);f.connect(g);g.connect(bus);s.start(time,Math.random()*.4,duration);s.onended=()=>{s.disconnect();f.disconnect();g.disconnect();};return f;
   }
   effect(kind,strength,x,z,player,yaw,blocked=false){
+    if(kind==='hingeMotion')return; // Continuous doorMotion owns the player hinge voice.
     const ctx=this.ctx,t=ctx.currentTime,dist=Math.hypot(x-player.x,z-player.z),g=ctx.createGain(),pan=ctx.createStereoPanner();
     pan.pan.value=Math.max(-.95,Math.min(.95,((x-player.x)*Math.cos(yaw)+(z-player.z)*Math.sin(yaw))/5));
     g.gain.value=(blocked?.60:1)/(1+dist*.09);g.connect(pan);pan.connect(this.effects);this.stats.lastKind=kind;this.stats.effects[kind]=(this.stats.effects[kind]||0)+1;

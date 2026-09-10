@@ -4,10 +4,11 @@ import {CLUES,LURES,WASHER,newNightTools,maskAt,phonePending,clueText} from './n
 import {newMetrics,evaluatePerformance} from './performance.js';
 import {INCIDENTS,incidentRoll,CATCH_DURATION,CATCH_INTRO,CATCH_SWEEP,SLOW_FACTOR} from './incidents.js';
 import {furnitureFor,searchSpots,circleHits,doorShape,PARENT_HOME} from './layout.js';
+import {restingDoor,advanceDoor,hingeCaption} from './door.js';
 export const PRESETS = [
-  {name:'第一声吱呀',subtitle:'从客厅找到书房',description:'两个藏点。读床头便条，借长鼾声轻轻通过，再去书房找设备。',width:.22,doorBand:[.25,.78],nightVisit:false,spots:[[3,2,'客厅矮柜'],[16,2,'书房抽屉']],creaks:[[3,9],[15,3]],device:1},
-  {name:'今晚走哪边',subtitle:'近路，未必安静',description:'五个藏点。用留言缩小范围，借洗衣机声掩护，或用道具引开父母。',width:.16,doorBand:[.34,.70],nightVisit:false,spots:[[2,2,'窗边矮柜'],[16,2,'书房抽屉'],[21,3,'餐边柜'],[21,11,'储物柜'],[12,17,'洗衣间抽屉']],creaks:[[3,9],[3,7],[3,5],[4,3],[10,3],[15,3],[16,10],[20,12]],device:3},
-  {name:'脚步近了',subtitle:'边探索，边听动静',description:'父母会起夜巡视。用声源引开巡查，蹲行避开视线，取物后先静音再返程。',width:.16,doorBand:[.34,.70],nightVisit:true,spots:[[2,2,'窗边矮柜'],[16,2,'书房抽屉'],[21,3,'餐边柜'],[21,11,'储物柜'],[12,17,'洗衣间抽屉']],creaks:[[3,9],[3,5],[4,3],[10,3],[15,3],[16,10],[20,12]],device:4}
+  {name:'第一声吱呀',subtitle:'从客厅找到书房',description:'两个藏点。读床头便条，借长鼾声轻轻通过，再去书房找设备。',width:.22,nightVisit:false,spots:[[3,2,'客厅矮柜'],[16,2,'书房抽屉']],creaks:[[3,9],[15,3]],device:1},
+  {name:'今晚走哪边',subtitle:'近路，未必安静',description:'五个藏点。用留言缩小范围，借洗衣机声掩护，或用道具引开父母。',width:.16,nightVisit:false,spots:[[2,2,'窗边矮柜'],[16,2,'书房抽屉'],[21,3,'餐边柜'],[21,11,'储物柜'],[12,17,'洗衣间抽屉']],creaks:[[3,9],[3,7],[3,5],[4,3],[10,3],[15,3],[16,10],[20,12]],device:3},
+  {name:'脚步近了',subtitle:'边探索，边听动静',description:'父母会起夜巡视。用声源引开巡查，蹲行避开视线，取物后先静音再返程。',width:.16,nightVisit:true,spots:[[2,2,'窗边矮柜'],[16,2,'书房抽屉'],[21,3,'餐边柜'],[21,11,'储物柜'],[12,17,'洗衣间抽屉']],creaks:[[3,9],[3,5],[4,3],[10,3],[15,3],[16,10],[20,12]],device:4}
 ];
 PRESETS.forEach((p,i)=>p.spots=searchSpots(i));
 export const MAP_DEPTH=19;
@@ -55,9 +56,9 @@ export class Game{
   reset(level=0){
     this.level=level;this.preset=PRESETS[level];this.player={...HOME,heading:Math.PI};
     this.parent={...PARENT_HOME,heading:0,state:'sleep',phase:'rest',intent:'patrol',a:0,recognition:0,route:[],itinerary:[],timer:0,lastRetarget:-10,scanHeading:0};
-    this.doors=[{x:3,z:10,name:'卧室门',open:false,progress:0,band:this.preset.doorBand},{x:11,z:6,name:'旧木门',open:false,progress:0,band:[.42,.63]}];
+    this.doors=[{x:3,z:10,name:'卧室门',open:false,progress:0},{x:11,z:6,name:'旧木门',open:false,progress:0}];
     this.spots=this.preset.spots.map(([x,z,name,id],i)=>({x,z,name,id,searched:false,device:i===this.preset.device}));
-    this.active=false;this.status='ready';this.mode=null;this.hidden=false;this.hasDevice=false;this.time=0;this.moveCooldown=0;this.noise=0;this.noiseAt={...HOME};this.noiseAge=100;this.quiet=0;this.events=[];this.toast='';this.toastLeft=0;this.history=[];this.vase='stable';this.nextVisit=level===2?32:Infinity;this.visits=0;this.speed=.5;this.pointer=.5;this.lastSnore=-9;this.lastFoot=0;this.lastDoorSound=0;this.lastSeen=0;this.aim=null;this.inspectionTarget={x:3,z:9};this.safeSteps=0;
+    this.active=false;this.status='ready';this.mode=null;this.hidden=false;this.hasDevice=false;this.time=0;this.moveCooldown=0;this.noise=0;this.noiseAt={...HOME};this.noiseAge=100;this.quiet=0;this.events=[];this.toast='';this.toastLeft=0;this.history=[];this.vase='stable';this.nextVisit=level===2?32:Infinity;this.visits=0;this.pointer=.5;this.lastSnore=-9;this.lastFoot=0;this.lastSeen=0;this.aim=null;this.inspectionTarget={x:3,z:9};this.safeSteps=0;
     this.cat=newCat();this.night=newNightTools();this.metrics=newMetrics();this.seed=Math.floor(Math.random()*4294967296)>>>0;this.incidentUsed={};this.incidentOutcomes={};this.realTime=0;
     this.velocity={x:0,z:0};this.walked=0;this.footTile=`${HOME.x},${HOME.z}`;this.stepTransit=null;
   }
@@ -142,7 +143,7 @@ export class Game{
     if(phonePending(this)){this.night.phone.armed=true;return;}
     if(this.catInteraction()){this.petCat();return;}
     const tool=this.toolNear();if(tool){if(tool.clue){this.mode={type:'puzzle',puzzleId:tool.id,elapsed:0};}else{this.night.lures[tool.id]={timer:2.5,pulses:0,done:false};this.say(`${tool.name} 已定时，2.5 秒后响起。先离开这里。`,'hint');this.emit('switch',5);}return;}
-    const d=this.doorNear();if(d){this.mode={type:'door',door:d,elapsed:0};this.speed=.5;this.emit('doorHandle',5);this.say('按住 E 推门；滚轮、左右键或滑块调整速度。听门轴的声音。','hint');return;}
+    const d=this.doorNear();if(d){this.mode={type:'door',door:d,elapsed:0,drive:restingDoor()};this.emit('doorHandle',5,d.x,d.z);this.say('手搭上门把。按住逐渐施力，松手停下，听一听门轴。','hint');return;}
     const s=this.spotNear();if(s){if(locked(this,s.id)){this.mode={type:'puzzle',puzzleId:'lock:'+s.id,elapsed:0};return;}this.mode={type:'search',spot:s,elapsed:0};this.say('轻轻翻找……有动静时按 Esc 立即停下。','hint');return;}
     this.say(this.hasDevice?'设备拿到了，返回发暖光的卧室。':'靠近门或房间里的柜子，再按 E。','hint');
   }
@@ -239,9 +240,11 @@ export class Game{
     this.tickNightTools(dt,input,cinematic);
     tickCat(this,dt);
     const m=this.mode;if(m){m.elapsed+=cinematic?realDt:dt;
-      if(m.type==='door'&&input.e){
-        const d=m.door,s=this.speed,good=s>=d.band[0]&&s<=d.band[1];this.metrics.doorSeconds+=dt;if(good)this.metrics.quietDoorSeconds+=dt;d.progress=clamp(d.progress+dt*(.10+s*.15),0,1);
-        if(this.time-this.lastDoorSound>.85){this.lastDoorSound=this.time;this.makeNoise(good?4:s<d.band[0]?20:29,good?'门轴轻轻转动。':s<d.band[0]?'吱——推得太慢，门轴持续摩擦。':'咚！太快了，门撞到了边框。',good?'doorSoft':s<d.band[0]?'doorCreak':'doorBump');}
+      if(m.type==='door'){
+        const d=m.door,drive=m.drive??=restingDoor();advanceDoor(d,drive,input,dt,this.level);
+        if(drive.moving){this.metrics.doorSeconds+=dt;this.metrics.quietDoorSeconds+=dt*(1-drive.roughness);
+          if(drive.noiseClock>=.75){this.makeNoise(drive.noiseEnergy/drive.noiseClock,'门轴发出了一阵咯吱声。','hingeMotion');drive.noiseClock=0;drive.noiseEnergy=0;}
+        }
         if(d.progress>=1){d.open=true;this.mode=null;this.say('门开了。停一拍，听听有没有回应。','good');this.emit('latch',12);}
       }
       if(m.type==='search'&&m.elapsed>=(m.nextSound||0)){m.nextSound=m.elapsed+1.2;this.emit('search',8);}
@@ -255,7 +258,7 @@ export class Game{
     }
   }
   serialize(){
-    const fields=['cat','night','metrics','seed','incidentUsed','incidentOutcomes','realTime','level','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','speed','pointer','lastSnore','lastFoot','lastDoorSound','inspectionTarget','safeSteps','walked','footTile','stepTransit','status'];
+    const fields=['cat','night','metrics','seed','incidentUsed','incidentOutcomes','realTime','level','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','pointer','lastSnore','lastFoot','inspectionTarget','safeSteps','walked','footTile','stepTransit','status'];
     const data=Object.fromEntries(fields.map(k=>[k,structuredClone(this[k])]));
     data.nextVisit=Number.isFinite(this.nextVisit)?this.nextVisit:null;
     data.doors=this.doors.map(d=>({open:d.open,progress:d.progress}));data.searched=this.spots.map(s=>s.searched);
@@ -265,7 +268,7 @@ export class Game{
   restore(data){
     if(!data||!Number.isInteger(data.level)||!PRESETS[data.level]||!Number.isFinite(data.player?.x)||!Number.isFinite(data.player?.z)||!Number.isFinite(data.time)||data.time<0||!Array.isArray(data.doors)||!data.parent||!Array.isArray(data.parent.route)||!Number.isFinite(data.parent.x)||!Number.isFinite(data.parent.z)||!Number.isFinite(data.parent.a))return false;
     this.reset(data.level);
-    const allowed=['metrics','seed','incidentUsed','incidentOutcomes','realTime','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','speed','pointer','lastSnore','lastFoot','lastDoorSound','inspectionTarget','safeSteps','walked','footTile','stepTransit'];
+    const allowed=['metrics','seed','incidentUsed','incidentOutcomes','realTime','player','parent','hidden','hasDevice','time','noise','noiseAt','noiseAge','quiet','toast','toastLeft','history','vase','visits','pointer','lastSnore','lastFoot','inspectionTarget','safeSteps','walked','footTile','stepTransit'];
     for(const k of allowed)if(data[k]!==undefined)this[k]=structuredClone(data[k]);
     if(data.night){
       const n=data.night;
@@ -282,6 +285,7 @@ export class Game{
     if(!this.canOccupy(this.player.x,this.player.z)){this.reset(data.level);return false;}
     if(data.mode){this.mode={...data.mode};if(this.mode.type==='catch'&&!this.mode.incidentId){this.mode.incidentId='vase';this.mode.elapsed=0;this.mode.remaining=CATCH_DURATION;this.metrics.incidents++;}if(this.mode.type==='door')this.mode.door=this.doors[this.mode.doorIndex];if(this.mode.type==='search')this.mode.spot=this.spots[this.mode.spotIndex];if(this.mode.type==='door'&&!this.mode.door||this.mode.type==='search'&&!this.mode.spot)this.mode=null;}
     if(this.mode?.type==='puzzle'&&!puzzleFor(this,this.mode.puzzleId))this.mode=null;
+    if(this.mode?.type==='door')this.mode.drive=restingDoor();
     this.cat=restoreCat(this,data.cat);
     this.status='playing';this.active=false;this.velocity={x:0,z:0};return true;
   }

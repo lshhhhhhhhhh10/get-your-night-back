@@ -8,7 +8,7 @@ export function stick(x=0,y=0,deadzone=.16,curve=1){
   const magnitude=Math.pow((Math.min(1,length)-deadzone)/(1-deadzone),curve);
   return {x:x/length*magnitude,y:y/length*magnitude};
 }
-export const emptyFrame=()=>({left:{x:0,y:0},right:{x:0,y:0},held:[],pressed:[],activity:false});
+export const emptyFrame=()=>({left:{x:0,y:0},right:{x:0,y:0},triggers:{left:0,right:0},held:[],pressed:[],activity:false});
 export class GamepadInput{
   constructor(){this.index=null;this.id='';this.previous=[];this.blocked=true;this.connected=false;this.unsupported=false;}
   inhibit(){this.blocked=true;}
@@ -23,10 +23,12 @@ export class GamepadInput{
     if(changed){this.index=pad.index;this.id=pad.id;this.previous=[];this.blocked=true;}
     const held=Array.from(pad.buttons,b=>!!b.pressed||b.value>.5);
     const left=stick(pad.axes[0],pad.axes[1],deadzone),right=stick(pad.axes[2],pad.axes[3],deadzone,1.5);
-    const activity=held.some(Boolean)||!!(left.x||left.y||right.x||right.y);
+    const trigger=i=>Number.isFinite(pad.buttons[i]?.value)?bound(pad.buttons[i].value,0,1):0;
+    const triggers={left:trigger(6),right:trigger(7)};
+    const activity=held.some(Boolean)||triggers.left>.035||triggers.right>.035||!!(left.x||left.y||right.x||right.y);
     if(!focused)this.blocked=true;
     if(this.blocked){if(focused&&!activity)this.blocked=false;this.previous=held;frame.activity=focused&&activity;return frame;}
-    frame.left=left;frame.right=right;frame.held=held;frame.pressed=held.map((down,i)=>down&&!this.previous[i]);frame.activity=activity;this.previous=held;return frame;
+    frame.left=left;frame.right=right;frame.triggers=triggers;frame.held=held;frame.pressed=held.map((down,i)=>down&&!this.previous[i]);frame.activity=activity;this.previous=held;return frame;
   }
 }
 export class MenuRepeat{
