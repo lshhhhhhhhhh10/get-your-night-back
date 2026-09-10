@@ -1148,7 +1148,7 @@ source/audio.js、assets/build/game.js、game.html 的版本路径、process.htm
 ### AI Design Assumptions (REQUIRED — do not skip)
 没有新增玩法决定。文档组织选择：原稿存放 development-log/brief-original.md；用简报顶部的 D01–D11 索引与旧段落旁提示消除冲突，避免重写整份正文；状态只保存当前摘要，历史继续在日志。明确“取消最低门速惩罚”和“不以五分钟强限扩建”等是先前 AI 的实施取舍，不倒写成用户原话。
 ### Development Action
-建立启动与收尾读取／维护流程，保存既有中文沟通、独立判断和证据边界。把反复出现的旧按键残留、模型与碰撞不一致、持续输入未释放及测试范围误报等问题写为具体检查动作；补上状态与规则的 README／制作过程入口，并记录本轮纯文档变化。
+建立启动与收尾读取／维护流程，保存既有中文沟通、独立判断和证据边界。针对已发现的旧按键残留、模型与碰撞不一致补充具体检查，并明确持续输入释放和测试范围表述的预防要求；补上状态与规则的 README／制作过程入口，并记录本轮纯文档变化。
 ### Files / Mechanics Changed
 AGENTS.md、PROJECT_STATUS.md、brief.md、development-log/brief-original.md、README.md、process.html、development-log/agent-development-log.md。没有改动游戏源码、构建、模型、声音、原系统图或原日志协议；游戏版本仍为 v0.11.1。
 ### Immediate Result
