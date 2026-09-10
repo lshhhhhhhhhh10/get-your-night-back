@@ -8,12 +8,12 @@
 
 每轮自动维护当前状态；已确认玩法同步简报，旧规则标明替代关系。长期规则不堆版本日志，AI 实施选择不冒充用户确认，学生反思由学生填写。[原始导出稿](development-log/brief-original.md) 原样存档，工作简报与历史记录继续保留。具体维护方式见 AGENTS。
 
-当前发布版本为 **v0.14.0**：机械开锁与掉落动画，以及日志 45 的门轴修订；正在上传和核验 GitHub Pages。详情见 [项目状态](PROJECT_STATUS.md)。
+当前公开版本为 **v0.14.0**：机械开锁、掉落动画与门轴修订已上线，公开交互及资源核验通过。游戏提交为 `2c50fd0`。详情见 [项目状态](PROJECT_STATUS.md)。
 
 ## 在线游玩
 
 - 项目首页：https://lshhhhhhhhhh10.github.io/get-your-night-back/
-- 直接游戏：https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html
+- 直接游戏：https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.14.0
 - 公开仓库：https://github.com/lshhhhhhhhhh10/get-your-night-back
 
 ## 运行

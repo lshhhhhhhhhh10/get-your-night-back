@@ -1360,3 +1360,35 @@ PROJECT_STATUS.md、process.html、development-log/agent-development-log.md；�
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 用户已明确授权上传，无待批准的发布步骤。继续完成公开部署与线上核验；新增实体手柄反馈与动画主观体验仍待用户试玩，不自动起草或代写阶段反思。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 48 — Raw Interaction Log
+
+**Time:** 2026-09-10（Asia/Shanghai）
+**Development Stage:** v0.14 线上核验与发布记录
+**Current Goal:** 确认用户要求上传的新版已在公开网址生效，并同步真实验证结果。
+**Git Tag / Commit:** 游戏发布提交 2c50fd066e9c7bfbabb1609a5d971b70f44b95c6；本条随后续文档提交保存，游戏构建保持不变。
+
+### Student Prompt
+延续本轮“好的 请上传”的明确授权；本条记录同一次发布的实际结果，不虚构新一次用户确认。
+
+### Agent Response Summary
+完整 v0.14 已推送 main，GitHub Pages 工作流 34468860773 成功。公开网址完成针对性操作和资源检查，再将发布结果写回项目文档。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+没有新增设计决定。沿用已有本地测试，仅重跑与发布相关的线上交互；隔离浏览器中的模拟手柄、定点存档不代表实体 USB 或玩家整局。同期门任务的独立验证注明来源，不当作本任务亲自重跑。
+
+### Development Action
+Pages 构建及上传成功后，部署阶段等待约 8 分钟才完成；其间公开地址仍返回旧构建，详细状态没有错误，官方状态页未报告服务故障，延迟原因无法确认。成功后使用隔离 Chrome 访问真实 Pages 地址，完成三夜机械锁、鼠标拖动释放、模拟标准 DualSense 腰形锁及反馈、暂停／失焦／刷新／断线清力、四种救场与桌面／窄屏检查。另核对三页、33 个同站资源地址、游戏及两张实景的哈希。
+
+### Files / Mechanics Changed
+仅更新 PROJECT_STATUS.md、README.md、brief.md 维护状态、process.html 与本日志，游戏源码、assets/build/game.js 和原始简报存档不变。日志 47 已随游戏提交保留，不改写其发布中记录。
+
+### Immediate Result
+线上检查全部通过，无脚本或资源错误；游戏 SHA-256 为 683e4b2212a5cd7a683f973efbcd81f71d3798b23cdda0b13b41cdb86fb0a609，与本地一致。检查脚本及输出在本机 /private/tmp/night-back-qa/v14-online-check.cjs、v14-online-pages.cjs 和 /private/tmp/night-v14-online-check.txt、night-v14-online-pages.txt，不上传临时验证文件。
+
+同期“优化开关门物理逻辑”任务提供同一公开构建的只读验证：三段门声、键鼠／模拟 R2／USB 报文、松手／暂停／失焦／断线、开关终点单次撞击、提前收力、两侧及 390 宽通过，无脚本或资源错误；公开源码的 24 个门角度／父母位置组合无穿门，玩家可恢复移动。仅碰撞用例为隔离通行关闭识别，实际游戏识别规则未改。脚本为 /private/tmp/night-back-qa/door-physics-online-20260910.cjs；该任务保持仓库只读。前轮 142 项与第一夜 100 分不冒充本轮复测，实体设备与人类听感仍未新增结论。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+上传授权已经执行，继续同步这份文档记录并核对最终远端提交及游戏构建不变；无需再次审批。等待用户之后对机械开锁和掉落动画给出实际试玩反馈，不代写反思。
