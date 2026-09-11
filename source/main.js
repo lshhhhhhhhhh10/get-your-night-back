@@ -20,6 +20,7 @@ import {LURES,maskAt,phonePending} from './night-tools.js';
 import {buildNightProps,updateNightProps} from './night-props.js';
 import {skinById,readSkin,saveSkin} from './skins.js';
 import {createSkinModel,disposeSkinModel} from './skin-model.js';
+import {isReferenceSkin,animateReferenceSkin} from './reference-skin-animation.js';
 import {Wardrobe} from './wardrobe.js';
 import {GamepadInput,MenuRepeat,BUTTON,emptyFrame} from './gamepad.js';
 import {INCIDENTS,CATCH_INTRO} from './incidents.js';
@@ -400,7 +401,8 @@ function animate(now){
   const traveled=distance(old,game.player),moving=traveled>.0001;walkPhase+=traveled*8;
   playerMesh.position.set(game.player.x,0,game.player.z);const angle=game.player.heading-playerMesh.rotation.y;playerMesh.rotation.y+=Math.atan2(Math.sin(angle),Math.cos(angle))*Math.min(1,dt*16);
   const body=playerMesh.userData.body;body.position.y=moving?Math.abs(Math.sin(walkPhase))*.025:0;body.scale.y=THREE.MathUtils.damp(body.scale.y,game.hidden?.65:1,16,dt);body.rotation.x=game.hidden?-.12:0;
-  for(const[name,{bone,rest}]of Object.entries(playerMesh.userData.bones)){
+  if(isReferenceSkin(playerMesh.userData.skinId))animateReferenceSkin(playerMesh.userData.asset,{time:game.time,phase:walkPhase,moving,crouching:game.hidden,reach:game.mode?.type==='catch'?1:game.mode?.type==='door'?.55:0});
+  else for(const[name,{bone,rest}]of Object.entries(playerMesh.userData.bones)){
     bone.quaternion.copy(rest);
     if(name==='ArmL'||name==='ArmR'){const sign=name==='ArmL'?1:-1;const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),-sign*.72);bone.quaternion.premultiply(q);bone.rotateX(game.mode?.type==='catch'?-1.05:game.mode?.type==='door'?-.5:moving?Math.sin(walkPhase+(sign>0?0:Math.PI))*.32:0);}
     if(name==='LegL'||name==='LegR')bone.rotateX(moving?Math.sin(walkPhase+(name==='LegL'?0:Math.PI))*.4:0);
@@ -413,7 +415,8 @@ function animate(now){
   // 第一人称交给真实深度和墙体遮挡。脚下射线不能代表头部是否可见。
   parentMesh.visible=close||!occluded(game.player,p,game.level,game.doors,game.hidden);
   const pb=parentMesh.userData.body;pb.position.set(0,.84*(1-wake),.78*(1-wake));pb.rotation.x=-Math.PI/2*(1-wake);pb.rotation.z=parentSleeping?Math.sin(now*.017)*Math.min(.07,(p.tickleHeat||0)*.055):0;
-  for(const[name,{bone,rest}]of Object.entries(parentMesh.userData.bones)){
+  if(isReferenceSkin(parentMesh.userData.skinId))animateReferenceSkin(parentMesh.userData.asset,{time:game.time,phase:now*.006,moving:parentMoving,sleeping:parentSleeping,tickle:Math.min(.7,p.tickleHeat||0)});
+  else for(const[name,{bone,rest}]of Object.entries(parentMesh.userData.bones)){
     bone.quaternion.copy(rest);
     if(name==='ArmL'||name==='ArmR'){const sign=name==='ArmL'?1:-1;bone.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),-sign*.72));bone.rotateX(parentMoving?Math.sin(now*.006+(sign>0?0:Math.PI))*.25:0);}
     if(name==='LegL'||name==='LegR')bone.rotateX(parentMoving?Math.sin(now*.006+(name==='LegL'?0:Math.PI))*.35:p.state==='warning'?-.65*Math.sin(wake*Math.PI):parentSleeping?Math.min(.7,p.tickleHeat||0)*(.6+Math.sin(now*.012)*.2):0);

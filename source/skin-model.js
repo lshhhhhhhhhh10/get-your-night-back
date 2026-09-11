@@ -1,4 +1,5 @@
 import {createMilkSkin} from './milk-skins.js';
+import {isReferenceSkin,animateReferenceSkin} from './reference-skin-animation.js';
 import * as THREE from 'three';
 import {clone} from 'three/addons/utils/SkeletonUtils.js';
 export function createSkinModel(template,id='scarf'){
@@ -39,4 +40,4 @@ export function createSkinModel(template,id='scarf'){
   return root;
 }
 export function disposeSkinModel(root){root?.traverse(o=>{if(o.userData.skinOwned)o.geometry?.dispose();for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.skinOwned||m?.userData.parentOwned)m.dispose();o.skeleton?.dispose();});}
-export function poseSkin(root,time=0){root.traverse(o=>{if(o.isBone&&(o.name==='ArmL'||o.name==='ArmR')){if(!o.userData.skinRest)o.userData.skinRest=o.quaternion.clone();o.quaternion.copy(o.userData.skinRest);o.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),(o.name==='ArmL'?-1:1)*.72));o.rotateX(Math.sin(time*1.3)*.035);}});}
+export function poseSkin(root,time=0){if(isReferenceSkin(root.userData.skinId)){animateReferenceSkin(root,{time});return;}root.traverse(o=>{if(o.isBone&&(o.name==='ArmL'||o.name==='ArmR')){if(!o.userData.skinRest)o.userData.skinRest=o.quaternion.clone();o.quaternion.copy(o.userData.skinRest);o.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),(o.name==='ArmL'?-1:1)*.72));o.rotateX(Math.sin(time*1.3)*.035);}});}

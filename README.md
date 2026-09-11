@@ -8,13 +8,14 @@
 
 每轮自动维护当前状态；已确认玩法同步简报，旧规则标明替代关系。长期规则不堆版本日志，AI 实施选择不冒充用户确认，学生反思由学生填写。[原始导出稿](development-log/brief-original.md) 原样存档，工作简报与历史记录继续保留。具体维护方式见 AGENTS。
 
+声学系统沿用 **v0.14.6**：真实录音统一接入墙体／木门／家具的分频隔音、门洞绕传、HRTF、地面反射和材质短混响；父母听觉与掩护使用同一传播模型。原操作和取物返程保留。发布与实际验证见 [项目状态](PROJECT_STATUS.md)。
 
-当前公开版本 **v0.14.6**：真实录音统一接入墙体／木门／家具的分频隔音、门洞绕传、HRTF、地面反射和材质短混响；父母听觉与掩护使用同一传播模型。原操作和取物返程保留。发布与实际验证见 [项目状态](PROJECT_STATUS.md)。
+当前发布版本 **v0.14.7**：按用户两张多视图在可见 Blender 中重建“金黄圆肚蛙”和“金黄小牛”，分别绑定 30／38 根骨骼，加入玩家和家长衣柜。可编辑源文件、预览、验证与来源见 [角色建模说明](docs/character-studio/README.md)。
 
 ## 在线游玩
 
 - 项目首页：https://lshhhhhhhhhh10.github.io/get-your-night-back/
-- 直接游戏：https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.14.5
+- 直接游戏：https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.14.7
 - 公开仓库：https://github.com/lshhhhhhhhhh10/get-your-night-back
 
 ## 运行
@@ -175,11 +176,11 @@ npm run build
 
 ## 皮肤衣柜
 
-主菜单 → 皮肤衣柜 → 选择“我自己”或“家长” → 选择外观 → 旋转预览 → 穿上这套。提供奶龙、奶蛙、奶鼠、围巾、螃蟹、厨师、纸箱、抱枕和睡帽九套，全部直接可用。鼠标拖动或转身按钮旋转；手柄方向键选择、× 确认、○ 返回，右摇杆旋转预览。
+主菜单 → 皮肤衣柜 → 选择“我自己”或“家长” → 选择外观 → 旋转预览 → 穿上这套。提供金黄圆肚蛙、金黄小牛、奶龙、奶蛙、奶鼠、围巾、螃蟹、厨师、纸箱、抱枕和睡帽十一套，全部直接可用。鼠标拖动或转身按钮旋转；手柄方向键选择、× 确认、○ 返回，右摇杆旋转预览。
 
 可分别更换玩家与当前家长角色。外观不改变速度、声音、碰撞、识别和评分，家长换装不增加巡查人数。选择卡只预览，确认后更新角色；刷新、续玩及换关保留外观，关卡进度不会被覆盖。存储不可用时当次仍可穿上，并显示不能保存的提示。
 
-- `source/skins.js`：九套目录、稳定 ID；`night-back:skin:v1` 和 `night-back:parent-skin:v1` 分别保存。
+- `source/skins.js`：十一套目录、稳定 ID；`night-back:skin:v1` 和 `night-back:parent-skin:v1` 分别保存。
 - `source/skin-model.js`：模型克隆、改装配件和独立材质；共享模型不会被其他皮肤污染。
 - `source/wardrobe.js`：三维预览、旋转、确认、载入失败重试和快速选择保护。
 - `assets/models/peak-character-{1,2}.glb`：附件新增螃蟹与厨师模型；原第三角色继续共用。

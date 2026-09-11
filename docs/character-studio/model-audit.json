@@ -1,0 +1,50 @@
+{
+  "golden-frog": {
+    "bones": 30,
+    "meshes": 30,
+    "vertices": 35650,
+    "triangles": 71180,
+    "unweighted": 0,
+    "bad_weight_sum": 0,
+    "max_influences": 3,
+    "nonfinite": 0,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "clips": [
+      "Idle",
+      "Walk",
+      "Crouch",
+      "Reach"
+    ],
+    "walk_max_vertex_displacement": 0.3034209675605388,
+    "walk_moved_vertices": 19047,
+    "file": "assets/models/golden-frog.glb",
+    "bytes": 3120020,
+    "sha256": "90d15cb7fc869b11a3bb6e8ba2a48f091d01145a8e79f62d8e6f841ba93af00d",
+    "reference_sha256": "2e4e1b508c1c18b66ee77018222fad00d0b20644249054c38606daf33da2fc8d"
+  },
+  "golden-bull": {
+    "bones": 38,
+    "meshes": 49,
+    "vertices": 46844,
+    "triangles": 93492,
+    "unweighted": 0,
+    "bad_weight_sum": 0,
+    "max_influences": 3,
+    "nonfinite": 0,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "clips": [
+      "Idle",
+      "Walk",
+      "Crouch",
+      "Reach"
+    ],
+    "walk_max_vertex_displacement": 0.2802790917846325,
+    "walk_moved_vertices": 15804,
+    "file": "assets/models/golden-bull.glb",
+    "bytes": 4116584,
+    "sha256": "92ce190995af11bc2bbf4f6d00d28f74d386496f845faca020701a0b814e4f2a",
+    "reference_sha256": "ece4cdb3c4659842e54ab330f0ca3d1c35d7043fda2c178417bf5d1da2d8917c"
+  }
+}

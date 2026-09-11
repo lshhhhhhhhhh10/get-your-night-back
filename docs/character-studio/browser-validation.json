@@ -1,0 +1,41 @@
+{
+  "environment": "Codex in-app browser, local 127.0.0.1:4187, 2026-09-11",
+  "passed": true,
+  "models": [
+    {
+      "id": "golden-frog",
+      "bones": 30,
+      "skinnedMeshes": 7,
+      "height": 1.6696005039810677,
+      "maxVertexMovement": 0.3120262791910613
+    },
+    {
+      "id": "golden-bull",
+      "bones": 38,
+      "skinnedMeshes": 8,
+      "height": 1.7638967289771736,
+      "maxVertexMovement": 0.31321996858455353
+    }
+  ],
+  "checks": [
+    "independent cloned skeletons",
+    "Idle Walk Crouch Reach imported and sampled",
+    "finite animated bounds",
+    "feet near ground and correct game scale",
+    "real runtime vertex movement",
+    "final body/head normal texture visual check",
+    "player/parent wardrobe equip and save",
+    "short keyboard movement and camera switches",
+    "pause"
+  ],
+  "limits": [
+    "no physical USB gamepad",
+    "no three-night completion",
+    "no human likeness approval",
+    "no full patrol/performance benchmark"
+  ],
+  "glb_sha256": {
+    "golden-frog": "90d15cb7fc869b11a3bb6e8ba2a48f091d01145a8e79f62d8e6f841ba93af00d",
+    "golden-bull": "92ce190995af11bc2bbf4f6d00d28f74d386496f845faca020701a0b814e4f2a"
+  }
+}

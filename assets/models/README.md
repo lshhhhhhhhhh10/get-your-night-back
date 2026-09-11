@@ -28,3 +28,10 @@
 - 奶蛙全身参考：https://www.naiwa.world/ 的 `assets/naiwa-standing.png`，图中为黄色网络变体，非官方角色授权。学生明确确认奶白色圆滚滚版本，因此模型改为奶白配色，圆眼、圆肚和短肢。
 - 奶鼠：搜索了奶鼠 / 奶蛙 / 全身，但未获得可验证为唯一角色原设的公开全身图片；用户确认奶白色圆滚形态后，制作大耳朵、圆肚和细尾巴的游戏改编。不把普通鼠图片冒称为奶鼠官方原设。三个模型均由 `source/milk-skins.js` 自制，不是从商业游戏提取或下载的官方人物模型。
 - 网页参考图不作为贴图或图片重新分发；九张衣柜缩略图均为游戏自身三维预览截图。CC0 只适用于注明的 Quaternius 猫资产，不覆盖其他角色 IP。
+
+
+## v0.14.7：两套用户多视图重建
+
+`golden-frog.glb` 和 `golden-bull.glb` 由本轮用户提供的两张多视图参考，在 Blender 5.2.1 中本地建模并绑定；没有沿用 PEAK 人体或下载其他人物包。分别有 30／38 根骨骼、四条自制演示动画；GLB 的 7／8 个材质组内嵌纹理，游戏独立驱动两个角色的骨骼。
+
+源文件为 `character-studio/turnaround-characters.blend`，自制纹理为 `character-studio/fleece-normal.png`。图片的作者与角色 IP 许可未核实；“用户提供参考”“本地制作几何／绑定”不等于官方授权或全资产 CC0。参考图哈希、制作范围、实际三角面数、查看方法与验证见 [角色建模说明](../../docs/character-studio/README.md) 和 [模型检查](../../docs/character-studio/model-audit.json)。历史九套仍可使用，当前衣柜共十一套。

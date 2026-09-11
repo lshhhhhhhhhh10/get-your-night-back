@@ -1,6 +1,8 @@
 export const SKIN_KEY='night-back:skin:v1';
 export const PARENT_SKIN_KEY='night-back:parent-skin:v1';
 export const SKINS=[
+  {id:'golden-frog',name:'金黄圆肚蛙',tag:'参考图精细建模',description:'绿眼睛、浅色圆肚与深色小手脚，带独立关节骨架。',model:'assets/models/golden-frog.glb',color:'#efc72b',source:'用户多视图参考 · Blender 自制建模与绑定'},
+  {id:'golden-bull',name:'金黄小牛',tag:'卷纹毛皮与弯牛角',description:'半垂眼皮、粉色口鼻、弯角与会摆动的尾巴。',model:'assets/models/golden-bull.glb',color:'#e9b126',source:'用户三视图参考 · Blender 自制建模与绑定'},
   {id:'nailong',name:'奶龙',tag:'圆肚子夜游',description:'奶黄色的小恐龙，蹑手蹑脚也藏不住圆肚皮。',model:'assets/models/peak-character.glb',color:'#f4c545',source:'全身图片参考 · 自制低多边形改编'},
   {id:'naiwa',name:'奶蛙',tag:'奶白色的呆萌',description:'圆眼睛、软肚子。按你选择的奶白色造型改编。',model:'assets/models/peak-character.glb',color:'#f1edd4',source:'全身参考与学生配色选择 · 自制改编'},
   {id:'naishu',name:'奶鼠',tag:'大耳朵小夜行',description:'奶白色圆身子和大耳朵，细尾巴跟在身后。',model:'assets/models/peak-character.glb',color:'#eee6db',source:'学生确认的奶白圆滚造型 · 自制改编'},
