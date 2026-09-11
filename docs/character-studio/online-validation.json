@@ -1,0 +1,36 @@
+{
+  "version": "0.14.7",
+  "date": "2026-09-11",
+  "url": "https://lshhhhhhhhhh10.github.io/get-your-night-back/game.html?v=0.14.7",
+  "release_commit": "dadf30cac244519f82c25ab75e81602f79ef3be9",
+  "pages_run": 34569518343,
+  "pages_result": "success",
+  "public_files_checked": 39,
+  "http_status": 200,
+  "all_files_byte_match": true,
+  "build_sha256": "db728b4c9bd6d0caf0eae1c6c8d710b76a911b0fdeb7e84c940c256515d0f290",
+  "browser_checks": {
+    "skin_count": 11,
+    "frog_3d_preview": true,
+    "bull_3d_preview": true,
+    "player_equipped": "golden-frog",
+    "parent_equipped": "golden-bull",
+    "both_retained_after_reload": true,
+    "enter_game": true,
+    "close_camera": true,
+    "keyboard_short_presses": [
+      "W",
+      "S"
+    ],
+    "pause": true,
+    "save_return_to_menu": true,
+    "console_errors_and_warnings": []
+  },
+  "not_verified": [
+    "three-night full playthrough",
+    "physical USB gamepad",
+    "full patrol and animation cycle",
+    "performance benchmark",
+    "human likeness and deformation approval"
+  ]
+}
