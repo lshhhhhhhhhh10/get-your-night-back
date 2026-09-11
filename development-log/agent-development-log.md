@@ -1935,3 +1935,33 @@ source/incidents.js、source/tests/performance-incidents.test.js、assets/build/
 
 ### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
 用户已明确确认三项均为 70% 并要求直接发布，无需重复批准。尚无更新后的真人触发频率或游戏体验反馈，不把静态阈值和自动验证当作真人试玩；未要求或起草阶段反思。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## Interaction 65 — Raw Interaction Log
+
+**Time:** 2026-09-11（Asia/Shanghai）
+**Development Stage:** v0.14.8 概率更新公开核验与收尾
+**Current Goal:** 完成日志 63 已授权的直接发布，确认线上真正使用三项 70%，保留同期家长复盘。
+**Git Tag / Commit:** 游戏发布提交 `5b00468216776edf5e57740bf6fe27088ab3b237`；本条随后续文档提交保存，不重建游戏。
+
+### Student Prompt
+沿用日志 63 的明确要求：“将叉子，笔筒，铁盒的触发概率都提升至70%，并直接发布”。本条记录该请求的发布结果，不是新的玩法授权。
+
+### Agent Response Summary
+v0.14.8 已推送至原仓库 main，Pages 工作流 `34570315296` 成功。线上十个发布文件 HTTP 200 且逐字节匹配提交，含事件源码、正式构建、游戏入口和规则说明。线上下载的事件模块确认三项均为 .7，花瓶配置保持 1；三个新增触发区间的固定种子判断正常。
+
+### AI Design Assumptions (REQUIRED — do not skip)
+None. 收尾仅记录实际结果；静态阈值、Node 定点验证和浏览器加载不等于真人概率统计或三夜通关。
+
+### Development Action
+发布前确认角色任务已完成其提交；为三个混合文档制作仅含本轮内容的公开副本，保留历史公共日志前缀以及工作区的玩法圆桌、家长复盘和各自 Raw 记录。Git 索引写入与网络访问因沙箱限制申请执行，自动审批通过，无自动审批拒绝。游戏提交后等待 Pages 成功，再并发核对十个线上文件，读取线上事件模块，刷新浏览器验证入口脚本与资源完成加载。
+
+### Files / Mechanics Changed
+收尾仅更新 README.md、PROJECT_STATUS.md、process.html、development-log/agent-development-log.md 的发布状态。游戏源码、正式构建、brief 生效决定、模型及原始简报均不再修改；同期未公开文档保留在工作区。
+
+### Immediate Result
+十个发布文件与 `5b00468216776edf5e57740bf6fe27088ab3b237` 一致，构建 SHA-256 为 `15c2f7cbf5c53d1d2da2c469ce30b3fd9adfe82a43c51f92425001786659e4f7`。浏览器入口实际载入 `assets/build/game.js?v=0.14.8`，开始和衣柜按钮已启用，继续进度标签正常，无错误／警告。本轮没有操作或覆盖用户的既有进度，没有冒充浏览器逐项接物、实体手柄或整局验证。前述 21 个相关检查与三组新增触发定点属于日志 63。
+
+### Student Follow-up (REQUIRED — do not write "TBD" or leave blank)
+三项 70% 及直接发布已完成，无需用户补充批准。已有存档中判定过的事件保留原状态，尚未判定者适用 70%；新开局才生成新种子。真人体验反馈仍未提供，未起草或代写阶段反思。
