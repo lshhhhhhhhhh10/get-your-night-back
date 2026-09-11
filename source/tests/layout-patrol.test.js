@@ -30,6 +30,6 @@ test('家长完成多个巡视地点、停看、推门和真实回程，无穿�
  assert.equal(g.status,'playing');assert.equal(g.visits,1);assert.ok(stops.size>=3);for(const phase of['walk','scan','opening','rest'])assert.ok(phases.has(phase));assert.equal(distance(g.parent,PARENT_HOME),0);assert.equal(g.doors[1].open,true);
 });
 test('调查记住最后明显声源，轻脚步不会不断追踪；新响声打断回程',()=>{
- const g=new Game(2);g.start();g.parent.state='checking';g.parent.intent='investigate';g.setDestination({x:3,z:9});g.player={x:16,z:3};g.makeNoise(50,'响声');assert.deepEqual(g.parent.goal,{x:16,z:3});g.player={x:11,z:12};g.makeNoise(1,'轻脚步');assert.deepEqual(g.parent.goal,{x:16,z:3});tick(g,1.3);g.parent.state='returning';g.makeNoise(50,'新响声');assert.equal(g.parent.state,'checking');assert.deepEqual(g.parent.goal,{x:11,z:12});
+ const g=new Game(2);g.start();g.parent.state='checking';Object.assign(g.parent,{x:16,z:4});g.parent.intent='investigate';g.setDestination({x:3,z:9});g.player={x:16,z:3};g.makeNoise(50,'响声');assert.deepEqual(g.parent.goal,{x:16,z:3});g.player={x:11,z:12};g.makeNoise(1,'轻脚步');assert.deepEqual(g.parent.goal,{x:16,z:3});tick(g,1.3);g.parent.state='returning';Object.assign(g.parent,{x:11,z:11});g.makeNoise(50,'新响声');assert.equal(g.parent.state,'checking');assert.deepEqual(g.parent.goal,{x:11,z:12});
  const h=new Game();assert.equal(h.restore(g.serialize()),true);assert.deepEqual(h.parent,g.parent);
 });

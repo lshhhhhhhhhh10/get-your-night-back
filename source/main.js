@@ -1,3 +1,5 @@
+import {acousticsFor} from './acoustics.js';
+import {listenerPosition,sourcePosition} from './acoustic-hearing.js';
 import {STATIONS} from './incident-setting.js';
 import {applyIncidentResult} from './incident-props.js';
 import {rescueHelp} from './rescue.js';
@@ -6,7 +8,7 @@ import {Haptics} from './haptics.js';
 import {createTickleHands,animateTickleHands} from './tickle-detail.js';
 import {TICKLE_TARGET,tickleCaption} from './tickle.js';
 import {floorAt,FLOOR_NAMES,RUGS} from './surfaces.js';
-import {acousticProfile,doorsForSound,latestSoundCue,SOUND_LABELS} from './spatial-audio.js';
+import {acousticProfile,latestSoundCue,SOUND_LABELS} from './spatial-audio.js';
 import {hingeCaption} from './door.js';
 import {addDoorDetail,animateDoorDetail} from './door-detail.js';
 import {cameraBlocked} from './follow-camera.js';
@@ -134,14 +136,14 @@ const heardCues=[];let listeningYaw=0;
 function applyAudio(){soundscape?.apply();}
 function enableAudio(){if(!audioContext){audioContext=new(window.AudioContext||window.webkitAudioContext)();soundscape=new Soundscape(audioContext,settings);}audioContext.resume().catch(()=>{});}
 function sound(kind,strength,x,z,surface,impact){
-  const source={kind,x,z},blocked=occluded(game.player,source,game.level,doorsForSound(source,game.doors),false);
-  soundscape?.effect(kind,strength,x,z,game.player,listeningYaw,blocked,surface,impact);
-  if(SOUND_LABELS[kind]&&distance(game.player,{x,z})>.6){heardCues.push({kind,x,z,at:performance.now()});if(heardCues.length>5)heardCues.shift();}
+  const path=acousticsFor(game).profile(sourcePosition(game,kind,{x,z}),listenerPosition(game));
+  soundscape?.effect(kind,strength,x,z,game.player,listeningYaw,false,surface,impact);
+  if(path.gain>.012&&SOUND_LABELS[kind]&&distance(game.player,{x,z})>.6){heardCues.push({kind,x,z,at:performance.now()});if(heardCues.length>5)heardCues.shift();}
 }
 function updateHearing(){
   const now=performance.now();while(heardCues.length&&now-heardCues[0].at>2200)heardCues.shift();
   const cue=latestSoundCue(heardCues,now),el=$('#sound-direction');el.hidden=!cue||!game.active;
-  if(cue){const blocked=occluded(game.player,cue,game.level,doorsForSound(cue,game.doors),false),a=acousticProfile(cue,game.player,listeningYaw,blocked);el.textContent=`${a.direction} · ${a.range}${blocked?' · 隔着墙或门':''} ｜ ${SOUND_LABELS[cue.kind]}`;}
+  if(cue){const path=acousticsFor(game).profile(sourcePosition(game,cue.kind,cue),listenerPosition(game)),a=acousticProfile(path.arrival,game.player,listeningYaw),range=path.distance<2?'很近':path.distance<6?'附近':'远处';el.hidden=!game.active||path.gain<=.012;el.textContent=`${a.direction} · ${range} · ${path.route==='doorway'?'门洞传来':path.blocked?'隔挡低沉':'清晰直达'} ｜ ${SOUND_LABELS[cue.kind]}`;}
 }
 
 const stateNames={sleep:'鼾声平稳',alert:'鼾声停了',warning:'床板响了',checking:'脚步靠近',returning:'脚步远去'};
@@ -200,7 +202,7 @@ $('#phone-mute').onpointerdown=e=>{e.preventDefault();game.action();keys.add('e'
 function tossToy(){const yaw=view.mode!=='overview'?view.yaw:0;game.tossCatToy(Math.sin(yaw),-Math.cos(yaw));persist();}
 function updateCatUI(){const c=game.cat,near=game.catNear(5.5);$('#cat-panel').hidden=!game.active||!near||!!game.mode||phonePending(game);const names={idle:'猫在看着你',follow:'猫悄悄跟了过来',rub:'猫正贴着腿蹭蹭',calm:'呼噜噜……猫很满足',toy:'猫追着玩具球去了',play:'猫正和球较劲',approach:'猫盯上了花瓶',prepare:`猫准备起跳 · ${Math.max(0,c.timer).toFixed(1)} 秒`,jump:'猫扑向桌沿！'};$('#cat-state').textContent=names[c.state];$('#cat-pet').disabled=!game.catNear()||['calm','play','jump'].includes(c.state);$('#cat-pet').textContent=padText('E · 安抚');$('#cat-toy').disabled=c.toyCooldown>0||c.state==='jump';$('#cat-toy').textContent=c.toyCooldown>0?`玩具 · ${Math.ceil(c.toyCooldown)} 秒后可用`:inputDevice==='gamepad'?'R2 · 丢玩具球':'Q · 丢玩具球';}
 $('#cat-pet').onclick=()=>{game.petCat();persist();};$('#cat-toy').onclick=tossToy;
-function updateNightUI(){const mask=maskAt(game);$('#mask-cue').textContent=mask?`${mask.name}掩护中 · 可直接走过木板`:'留意鼾声／脱水声盖过脚步时再走';$('#mask-cue').classList.toggle('active',!!mask);
+function updateNightUI(){const mask=maskAt(game);$('#mask-cue').textContent=mask?`${mask.name}掩护中 · 可直接走过木板`:'靠近掩护声，听清门内外再落脚';$('#mask-cue').classList.toggle('active',!!mask);
  const phone=game.night.phone;$('#phone-panel').hidden=!phonePending(game)||!game.active||['catch','reaction'].includes(game.mode?.type);$('#phone-state').textContent=phone.state==='warning'?`来电预兆 · ${Math.max(0,phone.timer).toFixed(1)} 秒后响铃`:'手机正在响铃';$('#phone-hold').style.width=`${Math.min(100,phone.hold/1.2*100)}%`;$('#phone-mute').textContent=padText('停下，按住 E · 1.2 秒静音');$('#phone-help').textContent=game.mode?padText('先按 Esc 停下当前动作，再静音。'):'可蹲着静音；移动会打断进度。';}
 function updateUI(){updateHearing();updateNightUI();updateCatUI();document.body.classList.toggle('door-active',game.mode?.type==='door'&&game.active);document.body.classList.toggle('tickle-active',game.mode?.type==='tickle'&&game.active);
   const p=game.parent,m=game.mode;document.body.classList.toggle('lock-active',m?.type==='lockpick'&&game.active);const cinematic=['catch','reaction','search','lockpick'].includes(m?.type);document.body.classList.toggle('incident-active',cinematic&&game.active);document.body.classList.toggle('search-active',m?.type==='search'&&game.active);$('#incident-caption').hidden=!cinematic;$('#incident-caption').textContent=cinematic?(m.type==='lockpick'?'一点点，听见咔哒。':m.type==='search'?'轻轻翻，仔细找。':m.type==='reaction'?(m.resultText||(m.success?'接住了。':'糟了，落地了。')):'那一瞬间，时间慢了下来。'):'';$('#objective').textContent=game.hasDevice?'带设备回到卧室':'探索房间，找回设备';$('#device-icon').classList.toggle('found',game.hasDevice);$('#parent-cue').textContent=stateNames[p.state];$('#parent-cue').dataset.state=p.state;$('#context').textContent=context();$('#context').hidden=!context();$('#hide-badge').hidden=!game.hidden;
@@ -445,10 +447,10 @@ function animate(now){
   if(transition.time<1){camera.position.lerpVectors(transition.from,targetPos,blend);camera.quaternion.slerpQuaternions(transition.rotation,targetRotation,blend);}else{camera.position.copy(targetPos);camera.quaternion.copy(targetRotation);}
   // 用本帧实际镜头朝向，切视角／转头插值时声道也跟着画面转；听者仍在玩家处。
   const audioForward=camera.getWorldDirection(new THREE.Vector3());listeningYaw=Math.atan2(audioForward.x,-audioForward.z);
-  const soundBlocked=v=>occluded(game.player,v,game.level,doorsForSound(v,game.doors),false);
-  soundscape?.listen(game.player,listeningYaw,soundBlocked);
-  soundscape?.environment(game,listeningYaw,soundBlocked);
-  soundscape?.doorMotion(game.mode,game.active&&game.status==='playing',game.player,focusDoor?(game.player.z>game.mode.door.z?0:Math.PI):view.yaw);
+  soundscape?.setScene(acousticsFor(game));
+  soundscape?.listen(listenerPosition(game),listeningYaw);
+  soundscape?.environment(game,listeningYaw);
+  soundscape?.doorMotion(game.mode,game.active&&game.status==='playing',game.player,listeningYaw);
   for(const e of frameEvents)if(e.type==='sound')sound(e.kind,e.strength,e.x,e.z,e.surface,e.impact);
   const fade=close&&!fp&&camera.position.distanceTo(new THREE.Vector3(game.player.x,eyeHeight,game.player.z))<1.35?.35:1;playerMesh.traverse(o=>{if(o.isMesh)for(const m of(Array.isArray(o.material)?o.material:[o.material])){m.transparent=fade<1;m.opacity=fade;m.depthWrite=fade===1;}});
   const fov=focusTickle?(camera.aspect<.8?100:78):focusDoor?69:fp?78:close?72:43;if(camera.fov!==fov){camera.fov=THREE.MathUtils.damp(camera.fov,fov,12,dt);camera.updateProjectionMatrix();}

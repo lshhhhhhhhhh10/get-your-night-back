@@ -43,7 +43,7 @@ test('键鼠持续按住会撞响，末段松手停住再短推可以轻停',()=
 test('环境掩护减弱父母听闻与噪声负担，撞击声音和手里脉冲保留物理力度',()=>{
   const run=masked=>{const {g}=fixture({progress:.999});g.time=3;g.lastSnore=masked?2.5:0;g.tick(.01,{doorPush:1});return {g,event:bumps(g)[0]};};
   const clear=run(false),masked=run(true);assert.ok(clear.event&&masked.event);
-  assert.equal(clear.event.impact,masked.event.impact);assert.ok(masked.event.strength<clear.event.strength*.3);
+  assert.equal(clear.event.impact,masked.event.impact);assert.equal(masked.event.strength,clear.event.strength);
   assert.deepEqual(eventFeedback(clear.event),eventFeedback(masked.event));
   assert.ok(masked.g.parent.a<clear.g.parent.a);assert.ok(masked.g.metrics.noiseBurden<clear.g.metrics.noiseBurden);
   const hard=eventFeedback(clear.event),light=eventFeedback({...clear.event,impact:.1});assert.ok(hard.strong>light.strong*2);assert.ok(hard.duration>light.duration);

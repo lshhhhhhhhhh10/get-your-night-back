@@ -7,16 +7,16 @@ import {acousticProfile,latestSoundCue} from '../spatial-audio.js';
 import {maskAt} from '../night-tools.js';
 test('掩护混音与原判定同一窗口，家长醒来与暂停停止环境声',()=>{
  const g=new Game();g.start();g.lastSnore=0;
- for(const t of[0,.05,.1,.8,1.59,1.6,1.7,6,7,8,12.99,13,18]){g.time=t;const f=environmentAudioFrame(g);assert.equal(f.mask,maskAt(g)?.id||null);if(f.mask)assert.ok(f.selfGain>.4&&f.selfGain<.7);}
+ for(const t of[0,.05,.1,.8,1.59,1.6,1.7,6,7,8,12.99,13,18]){g.time=t;const f=environmentAudioFrame(g);assert.equal(f.mask,maskAt(g)?.id||null);assert.equal(f.selfGain,1);}
  g.time=.5;g.parent.state='alert';assert.equal(environmentAudioFrame(g).sources[0].active,false);
- g.time=8;g.player={x:12,z:14};assert.equal(environmentAudioFrame(g).mask,'washer');g.active=false;const f=environmentAudioFrame(g);assert.equal(f.mask,null);assert.ok(f.sources.every(s=>!s.active));assert.equal(f.selfGain,1);
+ g.time=8;g.player={x:12,z:16};assert.equal(environmentAudioFrame(g).mask,'washer');g.active=false;const f=environmentAudioFrame(g);assert.equal(f.mask,null);assert.ok(f.sources.every(s=>!s.active));assert.equal(f.selfGain,1);
 });
 test('洗衣机范围外仍可听到但没有脚步压低，慢动作只同步播放时钟',()=>{
  const g=new Game();g.start();g.time=8;g.player={x:3,z:3};let f=environmentAudioFrame(g);assert.equal(f.selfGain,1);assert.equal(f.sources[1].active,true);g.mode={type:'catch'};f=environmentAudioFrame(g);assert.equal(f.clockRate,.12);assert.equal(f.selfGain,1);
 });
-test('家长脚步转头互换左右，背后／隔墙保留差异且不过度滤掉定位频率',()=>{
+test('脚步字幕随转头互换左右；HRTF 负责前后频谱，不另加人工背后滤波',()=>{
  const source={kind:'parentStep',x:3,z:-3},listener={x:0,z:0};const a=acousticProfile(source,listener),b=acousticProfile(source,listener,Math.PI),wall=acousticProfile(source,listener,0,true);
- assert.ok(a.lateral>.6&&b.lateral<-.6);assert.ok(b.cutoff<a.cutoff);assert.ok(wall.cutoff>=3000);assert.ok(wall.gain<a.gain);
+ assert.ok(a.lateral>.6&&b.lateral<-.6);assert.equal(a.cutoff,undefined);assert.equal(b.gain,undefined);
  assert.equal(latestSoundCue([{kind:'parentStep',at:100},{kind:'washer',at:200}],300).kind,'parentStep');
 });
 test('新增五个实录为单声道 PCM，淡入淡出、无削波；脱水声持续覆盖六秒',()=>{

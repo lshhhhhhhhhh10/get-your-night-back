@@ -1,4 +1,7 @@
+import {ENVIRONMENT_GAIN,sampleGain} from './sound-sources.js';
 import {acousticProfile,soundPosition} from './spatial-audio.js';
+import {AcousticScene} from './acoustics.js';
+import {AcousticVoice,roomImpulse} from './acoustic-voice.js';
 import {environmentAudioFrame} from './audio-environment.js';
 // 原创拨弦/钟琴夜曲；门和金属落地使用本地 CC0 实录，来源见 assets/audio/README.md。
 export const MUSIC_BEAT=.625;
@@ -20,10 +23,12 @@ export class Soundscape{
     this.master.gain.value=settings.master;this.effects.gain.value=settings.effects;this.music.gain.value=0;this.ambience.gain.value=0;
     this.effects.connect(this.master);this.music.connect(this.master);this.ambience.connect(this.master);this.limiter=ctx.createDynamicsCompressor();this.limiter.threshold.value=-2;this.limiter.knee.value=2;this.limiter.ratio.value=12;this.limiter.attack.value=.003;this.limiter.release.value=.12;
     this.master.connect(this.limiter);this.limiter.connect(ctx.destination);
-    this.selfSteps=ctx.createGain();this.selfSteps.connect(this.effects);this.environmentVoices=new Map();this.coverActive=false;this.parentCueUntil=0;
+    this.world=ctx.createGain();this.world.connect(this.effects);this.acousticScene=new AcousticScene();
+    this.reverbs={};for(const type of ['soft','wood','tile']){const convolver=ctx.createConvolver();convolver.normalize=false;convolver.buffer=roomImpulse(ctx,type);convolver.connect(this.world);this.reverbs[type]=convolver;}
+    this.selfSteps=ctx.createGain();this.selfSteps.connect(this.world);this.environmentVoices=new Map();this.coverActive=false;this.parentCueUntil=0;
     this.voices=new Set();this.footSequence={};this.listenerPose={x:0,z:0,yaw:0};
     this.stats={musicNotes:0,effects:{},lastKind:'',samplesReady:0,sampleErrors:[],hingeGrains:0,hingeMoving:false};this.samples={};this.ready=this.loadSamples();this.active=false;this.tension=false;this.step=0;this.next=ctx.currentTime+.05;
-    this.hingeSources=new Set();this.hingeNext=0;this.hingeGain=ctx.createGain();this.hingeGain.gain.value=0;this.hingeFilter=ctx.createBiquadFilter();this.hingeFilter.type='lowpass';this.hingePan=ctx.createStereoPanner();this.hingeFilter.connect(this.hingeGain);this.hingeGain.connect(this.hingePan);this.hingePan.connect(this.effects);
+    this.hingeSources=new Set();this.hingeNext=0;this.hingeGain=ctx.createGain();this.hingeGain.gain.value=0;this.hingeFilter=ctx.createBiquadFilter();this.hingeFilter.type='lowpass';this.hingeFilter.connect(this.hingeGain);this.hingeVoice=null;
     this.noise=ctx.createBuffer(1,ctx.sampleRate*3,ctx.sampleRate);const data=this.noise.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
     const wind=ctx.createBufferSource(),filter=ctx.createBiquadFilter();wind.buffer=this.noise;wind.loop=true;filter.type='lowpass';filter.frequency.value=170;wind.connect(filter);filter.connect(this.ambience);wind.start();
     this.apply();this.timer=setInterval(()=>this.schedule(),100);this.schedule();
@@ -43,12 +48,14 @@ export class Soundscape{
     const listening=!!(active&&mode?.type==='door');if(this.doorListening!==listening){this.doorListening=listening;this.apply();}
     if(!moving||!buffer){
       if(this.stats.hingeMoving){this.hingeGain.gain.setTargetAtTime(0,t,.018);for(const v of this.hingeSources){v.envelope.gain.cancelScheduledValues(t);v.envelope.gain.setTargetAtTime(0,t,.012);v.source.stop(t+.065);}this.hingeSources.clear();this.hingeNext=0;}
-      this.stats.hingeMoving=false;return;
+      if(this.hingeVoice){this.hingeGain.disconnect();this.hingeVoice.dispose();this.voices.delete(this.hingeVoice);this.hingeVoice=null;}this.stats.hingeMoving=false;return;
     }
     this.stats.hingeMoving=true;
     const rough=drive.roughness,volume=.14+rough*.95,rate=.78+(drive.speed??drive.pressure)*.40;
     this.hingeGain.gain.setTargetAtTime(volume,t,.045);this.hingeFilter.frequency.setTargetAtTime(1100+rough*4500,t,.055);
-    const d=mode.door;this.hingePan.pan.setTargetAtTime(Math.max(-.8,Math.min(.8,((d.x-.47-player.x)*Math.cos(yaw)+(d.z-player.z)*Math.sin(yaw))*.8)),t,.04);
+    const d=mode.door,source={kind:'hingeMotion',x:d.x-.47,z:d.z,y:1.2,ignoreDoor:d};
+    if(!this.hingeVoice){this.hingeVoice=this.spatialVoice(source.kind,source.x,source.z,player,yaw,false,1,this.world,source);this.hingeGain.connect(this.hingeVoice.gain);}
+    this.hingeVoice.source=source;this.hingeVoice.update(this.acousticScene.profile(source,this.listenerPose));
     for(const v of this.hingeSources)v.source.playbackRate.setTargetAtTime(rate,t,.08);
     if(t>=this.hingeNext){
       // Long overlapping phrases retain the uneven texture of the real hinge.
@@ -58,76 +65,62 @@ export class Soundscape{
       const voice={source,envelope};this.hingeSources.add(voice);source.onended=()=>{source.disconnect();envelope.disconnect();this.hingeSources.delete(voice);};this.hingeNext=t+span-.32;this.stats.hingeGrains++;
     }
   }
-  listen(player,yaw,isBlocked=()=>false){
-    const t=this.ctx.currentTime,l=this.ctx.listener;this.listenerPose={...player,yaw};
-    if(l.positionX){for(const[k,value]of Object.entries({positionX:player.x,positionY:1.35,positionZ:player.z,forwardX:Math.sin(yaw),forwardY:0,forwardZ:-Math.cos(yaw),upX:0,upY:1,upZ:0}))l[k].setTargetAtTime(value,t,.025);}
-    else{l.setPosition(player.x,1.35,player.z);l.setOrientation(Math.sin(yaw),0,-Math.cos(yaw),0,1,0);}
-    for(const v of this.voices){if(t<v.nextCheck)continue;v.nextCheck=t+.025;const a=acousticProfile(v,player,yaw,isBlocked(v));v.filter.frequency.setTargetAtTime(a.cutoff,t,.025);v.gain.gain.setTargetAtTime(a.gain*v.level,t,.025);v.width?.pan.setTargetAtTime(a.lateral*.38,t,.025);}
-    this.stats.activeVoices=this.voices.size;
+  setScene(scene){this.acousticScene=scene;}
+  listen(player,yaw){
+    const t=this.ctx.currentTime,l=this.ctx.listener;this.listenerPose={x:player.x,y:player.y??(player.hidden?.86:1.35),z:player.z,yaw};
+    if(l.positionX){for(const[k,value]of Object.entries({positionX:player.x,positionY:this.listenerPose.y,positionZ:player.z,forwardX:Math.sin(yaw),forwardY:0,forwardZ:-Math.cos(yaw),upX:0,upY:1,upZ:0}))if(this.listenerReady)l[k].setTargetAtTime(value,t,.025);else l[k].value=value;}
+    else{l.setPosition(player.x,this.listenerPose.y,player.z);l.setOrientation(Math.sin(yaw),0,-Math.cos(yaw),0,1,0);}
+    this.listenerReady=true;
+    for(const v of this.voices){if(t<v.nextCheck)continue;v.nextCheck=t+.08;v.update(this.acousticScene.profile(v.source,this.listenerPose));}
+    this.stats.activeVoices=this.voices.size;this.stats.listener={...this.listenerPose};
   }
   stopVoices(kind){const t=this.ctx.currentTime;for(const v of this.voices){if(kind&&v.kind!==kind)continue;v.gain.gain.cancelScheduledValues(t);v.gain.gain.setTargetAtTime(0,t,.01);this.voices.delete(v);setTimeout(v.dispose,65);}}
   apply(){const t=this.ctx.currentTime;this.master.gain.setTargetAtTime(this.settings.master,t,.04);this.effects.gain.setTargetAtTime(this.settings.effects,t,.04);this.music.gain.setTargetAtTime(this.settings.music*(this.doorListening?.25:this.coverActive?.24:this.ctx.currentTime<this.parentCueUntil?.30:1)*(this.tension?.40:.72)*(this.active?1:.5),t,.3);this.ambience.gain.setTargetAtTime(this.settings.ambience*.06,t,.1);}
-  state(active,parent){if(!active){this.stopEnvironment();if(this.active)this.stopVoices();}if(parent!=='sleep')this.stopVoices('snore');const tension=['warning','checking','returning'].includes(parent);if(active!==this.active||tension!==this.tension){this.active=active;this.tension=tension;this.apply();}}
+  state(active,parent){this.world.gain.setTargetAtTime(active?1:0,this.ctx.currentTime,.012);if(!active){this.stopEnvironment();if(this.active)this.stopVoices();}if(parent!=='sleep')this.stopVoices('snore');const tension=['warning','checking','returning'].includes(parent);if(active!==this.active||tension!==this.tension){this.active=active;this.tension=tension;this.apply();}}
   schedule(){const now=this.ctx.currentTime;if(this.parentCueUntil&&now>=this.parentCueUntil){this.parentCueUntil=0;this.apply();}if(this.next<now-.3)this.next=now+.02;while(this.next<now+.22){musicBeat(this.ctx,this.music,this.next,this.step++,this.active&&this.tension);this.next+=MUSIC_BEAT;this.stats.musicNotes++;}}
   noiseBurst(bus,time,duration,level,freq,q=1,type='bandpass'){
     const ctx=this.ctx,s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=this.noise;f.type=type;f.frequency.setValueAtTime(freq,time);f.Q.value=q;
     g.gain.setValueAtTime(.0001,time);g.gain.exponentialRampToValueAtTime(level,time+Math.min(.06,duration*.2));g.gain.exponentialRampToValueAtTime(.0001,time+duration);
     s.connect(f);f.connect(g);g.connect(bus);s.start(time,Math.random()*.4,duration);s.onended=()=>{s.disconnect();f.disconnect();g.disconnect();};return f;
   }
-  spatialVoice(kind,x,z,player,yaw,blocked,level=1,bus=this.effects){
-    const ctx=this.ctx,t=ctx.currentTime,g=ctx.createGain(),filter=ctx.createBiquadFilter(),pan=ctx.createPanner();
-    const profile=acousticProfile({kind,x,z},player,yaw,blocked),position=soundPosition(kind,x,z),parent=kind==='parentStep';
-    pan.panningModel='HRTF';pan.distanceModel='inverse';pan.refDistance=parent?2.3:1.8;pan.maxDistance=30;pan.rolloffFactor=parent?.85:1.25;
-    pan.channelCount=1;pan.channelCountMode='explicit';
-    pan.positionX.value=position.x;pan.positionY.value=position.y;pan.positionZ.value=position.z;
-    filter.type='lowpass';filter.frequency.value=profile.cutoff;g.gain.value=profile.gain*level;
-    g.connect(filter);filter.connect(pan);
-    // 小幅增加耳间电平差，保留 HRTF 的时差及频谱，不硬切单侧耳机。
-    const width=parent?ctx.createStereoPanner():null;if(width){width.pan.value=profile.lateral*.38;pan.connect(width);width.connect(bus);}else pan.connect(bus);
-    let disposed=false;
-    const voice={kind,x,z,level,gain:g,filter,pan,width,profile,nextCheck:t+.025,dispose:()=>{if(disposed)return;disposed=true;g.disconnect();filter.disconnect();pan.disconnect();width?.disconnect();this.voices.delete(voice);}};
-    this.voices.add(voice);return voice;
+  spatialVoice(kind,x,z,player,yaw,blocked,level=1,bus=this.world,position){
+    const source=position||{kind,...soundPosition(kind,x,z)};if(/^door|^hinge|^latch/.test(kind)&&!source.ignoreDoor){source.ignoreDoor=this.acousticScene.doors.find(d=>Math.hypot(d.x-x,d.z-z)<.75);}const profile=this.acousticScene.profile(source,this.listenerPose);
+    const voice=new AcousticVoice(this.ctx,source,bus,this.reverbs,profile);voice.kind=kind;voice.x=x;voice.z=z;voice.level=level;voice.gain.gain.value=level;voice.nextCheck=this.ctx.currentTime+.08;
+    const dispose=voice.dispose.bind(voice);voice.dispose=()=>{dispose();this.voices.delete(voice);};this.voices.add(voice);return voice;
   }
   stopEnvironment(kind){
     const t=this.ctx.currentTime;
-    for(const[id,v]of this.environmentVoices){if(kind&&kind!==id)continue;v.gain.gain.cancelScheduledValues(t);v.gain.gain.setTargetAtTime(0,t,.008);v.source.stop(t+.045);this.environmentVoices.delete(id);}
+    for(const[id,v]of this.environmentVoices){if(kind&&kind!==id)continue;v.voice.output.gain.cancelScheduledValues(t);v.voice.output.gain.setTargetAtTime(0,t,.008);v.source.stop(t+.045);this.environmentVoices.delete(id);}
   }
-  environment(game,yaw,isBlocked=()=>false){
-    const frame=environmentAudioFrame(game),ctx=this.ctx,t=ctx.currentTime;
-    this.selfSteps.gain.setTargetAtTime(frame.selfGain,t,frame.mask?.025:.065);
+  environment(game,yaw){
+    const frame=environmentAudioFrame(game),ctx=this.ctx,t=ctx.currentTime;this.selfSteps.gain.value=1;
     const covered=!!frame.mask;if(covered!==this.coverActive){this.coverActive=covered;this.apply();}
     for(const state of frame.sources){
       if(!state.active){this.stopEnvironment(state.kind);continue;}
-      const buffer=this.samples[state.kind];if(!buffer)continue;
-      let v=this.environmentVoices.get(state.kind);
-      // 暂停／续玩、音频晚解锁从当前相位进入；慢动作与游戏时钟保持同步。
+      const buffer=this.samples[state.kind];if(!buffer)continue;let v=this.environmentVoices.get(state.kind);
       if(v){v.age+=(t-v.at)*v.rate;v.at=t;if(Math.abs(v.age-state.age)>.16){this.stopEnvironment(state.kind);v=null;}}
       if(!v){
-        const source=ctx.createBufferSource(),gain=ctx.createGain(),filter=ctx.createBiquadFilter(),pan=ctx.createStereoPanner();
-        source.buffer=buffer;source.loop=true;gain.gain.value=0;filter.type='lowpass';source.connect(filter);filter.connect(gain);gain.connect(pan);pan.connect(this.effects);
-        v={source,gain,filter,pan,age:state.age,at:t,rate:frame.clockRate};this.environmentVoices.set(state.kind,v);
-        source.playbackRate.value=frame.clockRate;source.start(t,state.age%buffer.duration);
-        source.onended=()=>{source.disconnect();gain.disconnect();filter.disconnect();pan.disconnect();};
+        const source=ctx.createBufferSource(),voice=this.spatialVoice(state.kind,state.x,state.z,game.player,yaw,false,0,this.world,{kind:state.kind,...soundPosition(state.kind,state.x,state.z)});
+        source.buffer=buffer;source.loop=true;source.connect(voice.gain);v={source,voice,age:state.age,at:t,rate:frame.clockRate};this.environmentVoices.set(state.kind,v);
+        source.playbackRate.value=frame.clockRate;source.start(t,state.age%buffer.duration);source.onended=()=>{source.disconnect();voice.dispose();};
         this.stats.effects[state.kind]=(this.stats.effects[state.kind]||0)+1;
       }
       v.rate=frame.clockRate;v.source.playbackRate.setValueAtTime(frame.clockRate,t);
-      const blocked=isBlocked(state),a=acousticProfile(state,game.player,yaw,blocked);
-      // 鼾声规则全屋生效，所以保留穿屋可闻的声底；洗衣声仍随距离渐弱。
-      const snore=state.kind==='snore',distanceGain=snore?Math.max(.52,1/(1+a.distance*.055)):1/(1+a.distance*.10);
-      v.gain.gain.setTargetAtTime(state.gain*(snore?.60:.42)*distanceGain*(blocked?.82:1),t,.018);
-      v.filter.frequency.setTargetAtTime(blocked?2400:7000,t,.04);v.pan.pan.setTargetAtTime(a.lateral*.65,t,.025);
+      v.voice.gain.gain.setTargetAtTime(state.gain*ENVIRONMENT_GAIN[state.kind],t,.018);
     }
-    this.stats.environment={mask:frame.mask,selfGain:frame.selfGain,voices:[...this.environmentVoices.keys()],clockRate:frame.clockRate};
+    this.stats.environment={mask:frame.mask,selfGain:1,voices:[...this.environmentVoices.keys()],clockRate:frame.clockRate,
+      paths:Object.fromEntries([...this.environmentVoices].map(([id,v])=>[id,{gain:v.voice.profile.gain,route:v.voice.profile.route,walls:v.voice.profile.walls,doors:v.voice.profile.doors}]))};
   }
   effect(kind,strength,x,z,player,yaw,blocked=false,surface='wood',doorImpact){
     if(['hingeMotion','snore','washer'].includes(kind))return; // 持续声音由游戏时钟驱动。
     const ctx=this.ctx,t=ctx.currentTime;
+    if(['win','lose','found','notice'].includes(kind)){const notes=kind==='win'?[67,71,74,79]:kind==='found'?[69,76]:kind==='lose'?[57,54,50]:[80,81];notes.forEach((n,i)=>tone(ctx,this.effects,t+i*.12,hz(n),.4,.12));return;}
     const impact=['metalDrop','pencilDrop','crash'].includes(kind),contact=Math.max(0,Math.min(1,doorImpact??((strength-24)/66)));
     const level=kind==='doorBump'?.18+contact*.82:impact?Math.max(.05,Math.min(1,strength/(kind==='crash'?90:kind==='pencilDrop'?40:65))):1;
     const self=['step','crouchStep','tileStep','floorPressure','floorSoft','floorCreak'].includes(kind);
-    const voice=this.spatialVoice(kind,x,z,player,yaw,blocked,level,self?this.selfSteps:this.effects),g=voice.gain,profile=voice.profile;
+    const voice=this.spatialVoice(kind,x,z,player,yaw,blocked,level,self?this.selfSteps:this.world),g=voice.gain,profile={...acousticProfile(voice.profile.arrival,player,yaw),...voice.profile};
     if(kind==='parentStep'){this.parentCueUntil=t+.95;this.apply();}
-    this.stats.lastKind=kind;this.stats.effects[kind]=(this.stats.effects[kind]||0)+1;this.stats.lastSpatial={kind,...profile,x,z};
+    this.stats.lastKind=kind;this.stats.effects[kind]=(this.stats.effects[kind]||0)+1;this.stats.lastSpatial={kind,direction:profile.direction,distance:profile.distance,gain:profile.gain,route:profile.route,walls:profile.walls,doors:profile.doors,x,z};
     if(kind==='doorBump')this.stats.lastDoorImpact={impact:contact,level,offset:.305,duration:.34};
     const burst=(time,duration,volume,f,q,type)=>this.noiseBurst(g,time,duration,volume,f,q,type);
     const note=(time,f,duration,level,type='sine')=>tone(ctx,g,time,f,duration,level,type);
@@ -136,9 +129,9 @@ export class Soundscape{
     const foot=['step','crouchStep','parentStep','tileStep'].includes(kind),seq=this.footSequence[surface]||0;
     let footSample=false;
     if(foot){this.footSequence[surface]=seq+1;const variant=[1,3,2,4][seq%4],soft=kind==='crouchStep',parent=kind==='parentStep';
-      footSample=this.sample(`step-${surface}-${variant}`,g,t,(soft?.07:parent?.92:.27)*(surface==='carpet'?.58:1),(parent?.90:1.04)+(seq%3-1)*.035,0,.46);this.stats.lastFootstep={surface,variant,recorded:footSample};}
+      footSample=this.sample(`step-${surface}-${variant}`,g,t,sampleGain(kind,surface,strength),(parent?.90:1.04)+(seq%3-1)*.035,0,.46);this.stats.lastFootstep={surface,variant,recorded:footSample};}
     let floorSample=false;
-    if(['floorPressure','floorSoft','floorCreak'].includes(kind)){const variant=1+(this.floorSequence||0)%3;this.floorSequence=(this.floorSequence||0)+1;const loud=kind==='floorCreak',pressure=kind==='floorPressure';floorSample=this.sample(`floor-${variant}`,g,t,loud?.82:pressure?.12:.27,1,0,loud?1.5:pressure?.32:.68);this.stats.lastFloor={kind,variant,recorded:floorSample};}
+    if(['floorPressure','floorSoft','floorCreak'].includes(kind)){const variant=1+(this.floorSequence||0)%3;this.floorSequence=(this.floorSequence||0)+1;const loud=kind==='floorCreak',pressure=kind==='floorPressure';floorSample=this.sample(`floor-${variant}`,g,t,sampleGain(kind,surface,strength),1,0,loud?1.5:pressure?.32:.68);this.stats.lastFloor={kind,variant,recorded:floorSample};}
     // 原录音的撞击峰在 0.326 秒；从接触前沿起播，让巨响贴合到头这一帧。
     const sampled=footSample||floorSample||(kind==='doorHandle'?this.sample('handle',g,t,.7,1,0,.7):kind==='doorSoft'?this.sample('hinge',g,t,.18,.94,.15,.64):kind==='doorCreak'?this.sample('hinge',g,t,.66,.75,.10,.67):kind==='doorBump'?this.sample('bump',g,t,3,1,.305,.34):kind==='latch'?this.sample('latch',g,t,.55,1.05,.32,.32):kind==='metalDrop'?this.sample('metal',g,t,.8,.93):kind==='search'?this.sample('drawer',g,t,.22,.9,0,.55):false);
     if(sampled){/* 真实把手、门轴、木门撞击和金属碰撞，不叠加旧电子滑音。 */}

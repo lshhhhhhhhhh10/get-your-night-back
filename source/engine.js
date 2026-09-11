@@ -1,8 +1,10 @@
+import {MAP_DEPTH,mapWidth,wall} from './world-geometry.js';
+export {MAP_DEPTH,mapWidth,wall} from './world-geometry.js';
 import {REACTION_DURATION,impactTime} from './incident-motion.js';
 import {newRescue,advanceRescue,RESCUE_DURATION} from './rescue.js';
 import {tickleNear,tickTickle} from './tickle.js';
 import {floorAt} from './surfaces.js';
-import {doorsForSound} from './spatial-audio.js';
+import {hearingAt} from './acoustic-hearing.js';
 import {locked,newLock,advanceLock,releaseLock,restoreLock,LOCKS} from './lockpick.js';
 import {newCat,tickCat,catNear,catInteraction,petCat,tossCatToy,restoreCat} from './cat.js';
 import {CLUES,LURES,WASHER,newNightTools,maskAt,phonePending} from './night-tools.js';
@@ -17,31 +19,13 @@ export const PRESETS = [
   {name:'脚步近了',subtitle:'边探索，边听动静',description:'父母会起夜巡视。用声源引开巡查，蹲行避开视线，取物后先静音再返程。',width:.16,nightVisit:true,spots:[[2,2,'窗边矮柜'],[16,2,'书房抽屉'],[21,3,'餐边柜'],[21,11,'储物柜'],[12,17,'洗衣间抽屉']],creaks:[[3,9],[3,5],[4,3],[10,3],[15,3],[16,10],[20,12]],device:4}
 ];
 PRESETS.forEach((p,i)=>p.spots=searchSpots(i));
-export const MAP_DEPTH=19;
-export const mapWidth=level=>level===0?19:24;
+
 export const RECOGNITION_TIME=.25;
 export const MINIMAP_RADIUS=4;
 export const HOME={x:3,z:12};
 export const COVERS=furnitureFor(2).filter(f=>f.cover);
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
-export function wall(x,z,level=0){
-  if(x<=0||x>=mapWidth(level)-1||z<=0||z>=MAP_DEPTH-1)return true;
-  if(z>=14&&x<10)return true;
-  if(x===14&&![3,9,12,16].includes(z))return true;
-  if(x>=15){
-    if(x===18&&![3,12,16].includes(z))return true;
-    if((z===7||z===14)&&![16,21].includes(x))return true;
-    return false;
-  }
-  if(z===14&&x>=10&&x<14&&x!==11)return true;
-  if(z===10 && x!==3 && x!==11)return true;
-  if(x===7&&z>=11)return true;
-  if((z===4||z===8)&&x>=5&&x<=9 && !(z===8&&x===7))return true;
-  if((x===5||x===9)&&z>=4&&z<=8)return true;
-  if(z===6&&x>=10&&x!==11)return true;
-  return false;
-}
 export function canStand(x,z,level=0,radius=.20){
   for(let iz=Math.floor(z-.8);iz<=Math.ceil(z+.8);iz++)for(let ix=Math.floor(x-.8);ix<=Math.ceil(x+.8);ix++)if(wall(ix,iz,level)&&circleHits({x,z},radius,{x:ix,z:iz,w:1,d:1}))return false;
   return !furnitureFor(level).some(f=>circleHits({x,z},radius,f));
@@ -72,17 +56,16 @@ export class Game{
   say(text,type='info'){this.toast=text;this.toastLeft=5;this.events.push({type,text,time:this.time});if(type!=='snore'&&type!=='hint'){this.history.push({text,time:this.realTime});if(this.history.length>12)this.history.shift();}}
   emit(kind,strength=0,x=this.player.x,z=this.player.z){const event={type:'sound',kind,strength,x,z,surface:floorAt(x,z)};this.events.push(event);return event;}
   makeNoise(amount,label,kind,source=this.player){
-    const mask=maskAt(this,source);if(mask)amount*=mask.factor;
+    const raw=amount;kind=kind||(amount>15?'creak':'step');const hearing=hearingAt(this,raw,kind,source);amount*=hearing.factor;
     if(amount>10){this.metrics.loudSounds++;this.metrics.noiseBurden+=amount-10;}
     this.noise=amount;this.noiseAt={x:source.x,z:source.z};this.noiseAge=0;this.quiet=0;
     // 墙和距离影响父母实际听到的声响；声响本身从不直接判负。
-    this.hearNoise(amount,kind==='doorBump'?{...source,kind}:source);
-    if(amount>10)this.say(label,'noise');return this.emit(kind||(amount>15?'creak':'step'),amount,source.x,source.z);
+    this.hearNoise(raw,{...source,kind},false,hearing);
+    if(amount>10)this.say(label,'noise');return this.emit(kind,raw,source.x,source.z);
   }
-  hearNoise(amount,source,force=false){
+  hearNoise(amount,source,force=false,result){
     if(force)this.quiet=0;
-    const dist=distance(source,this.parent),attenuation=occluded(source,this.parent,this.level,doorsForSound(source,this.doors))?.50:1;
-    const heard=amount*attenuation/(1+dist*.07);
+    const {heard}=result||hearingAt(this,amount,source.kind||'creak',source);this.lastHearing={heard,...(result?{factor:result.factor}:{})};
     this.parent.a=clamp(this.parent.a+heard,0,100);if(heard>=6){this.inspectionTarget={x:source.x,z:source.z};if(['checking','returning'].includes(this.parent.state)&&this.time-this.parent.lastRetarget>1.2){this.parent.state='checking';this.parent.intent='investigate';this.parent.itinerary=[];this.parent.lastRetarget=this.time;this.setDestination(this.inspectionTarget);}}
     if(heard>=6&&this.parent.state==='warning'){this.parent.intent='investigate';this.parent.itinerary=[{...this.inspectionTarget}];}
     if(force&&heard>=6&&['sleep','alert'].includes(this.parent.state))this.parent.a=Math.max(60,this.parent.a);
@@ -96,7 +79,7 @@ export class Game{
     if(this.status!=='playing')return;
     const phase=this.time%WASHER.cycle;
     if(phase>=WASHER.start&&phase<WASHER.end&&this.time-this.night.lastWasher>=1.6){this.night.lastWasher=this.time;this.emit('washer',30,WASHER.x,WASHER.z);}
-    for(const l of LURES){const state=this.night.lures[l.id];if(!state||state.done)continue;state.timer-=dt;if(state.timer<=0){state.pulses++;state.timer=1.6;this.emit(l.kind,50,l.x,l.z);this.hearNoise(65,l,true);if(state.pulses===1)this.say(`${l.name} 响了，父母会去查看那个位置。`,'info');if(state.pulses>=4)state.done=true;}}
+    for(const l of LURES){const state=this.night.lures[l.id];if(!state||state.done)continue;state.timer-=dt;if(state.timer<=0){state.pulses++;state.timer=1.6;this.emit(l.kind,50,l.x,l.z);this.hearNoise(65,l,true);if(state.pulses===1)this.say(`${l.name} 响了，声音传出去了，留意父母是否听见。`,'info');if(state.pulses>=4)state.done=true;}}
     const phone=this.night.phone;
     if(!phonePending(this)||cinematic)return;
     phone.timer-=dt;
