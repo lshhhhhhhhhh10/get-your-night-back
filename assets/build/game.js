@@ -380,7 +380,7 @@ function $r(i, e = 25, t = "wood") {
   return n.map((r) => r * s);
 }
 function bl(i, e, t) {
-  return { x: e, y: /Step$|step|floor|Drop|crash/i.test(i) ? 0.12 : i === "snore" ? 1 : i === "radio" ? e > 20 ? 0.88 : 0.6 : i === "toy" ? 0.65 : 1.1, z: t };
+  return { x: i === "hingeMotion" ? e - 0.47 : e, y: i === "hingeMotion" ? 1.2 : /Step$|step|floor|Drop|crash/i.test(i) ? 0.12 : i === "snore" ? 1 : i === "radio" ? e > 20 ? 0.88 : 0.6 : i === "toy" ? 0.65 : 1.1, z: t };
 }
 function Pm(i, e) {
   return i.findLast((t) => t.kind === "doorBump" && e - t.at < 450) || i.findLast((t) => t.kind === "parentStep" && e - t.at < 1e3) || i.at(-1);

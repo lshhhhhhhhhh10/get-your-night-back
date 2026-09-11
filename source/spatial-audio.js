@@ -1,4 +1,4 @@
-export function soundPosition(kind,x,z){return {x,y:/Step$|step|floor|Drop|crash/i.test(kind)?.12:kind==='snore'?1:kind==='radio'?(x>20?.88:.6):kind==='toy'?.65:1.1,z};}
+export function soundPosition(kind,x,z){return {x:kind==='hingeMotion'?x-.47:x,y:kind==='hingeMotion'?1.2:/Step$|step|floor|Drop|crash/i.test(kind)?.12:kind==='snore'?1:kind==='radio'?(x>20?.88:.6):kind==='toy'?.65:1.1,z};}
 // 门框撞击来自门本体；自己的门扇不能把这一下误判为隔门闷响。
 export function doorsForSound(source,doors){return source.kind==='doorBump'?doors.filter(d=>Math.hypot(d.x-source.x,d.z-source.z)>.01):doors;}
 // 父母紧接着翻身时，给接触声留半拍字幕，再显示其回应。
